@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Smart Food Queue - {{ action }} Menu{% endblock %}
+{% block page_title %}{{ action }} Menu Kantin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 col-lg-6 mx-auto">
+        <div class="card card-glass">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <a href="{% url 'vendor_menu' %}" class="btn-icon"><i class="bi bi-arrow-left"></i></a>
+                    <h4 class="fw-bold m-0">{{ action }} Item Menu</h4>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    
+                    <div class="d-flex gap-2 mt-4 pt-3 border-top border-custom">
+                        <a href="{% url 'vendor_menu' %}" class="btn btn-outline-primary-custom flex-grow-1 justify-content-center">Batal</a>
+                        <button type="submit" class="btn btn-primary-custom flex-grow-1 justify-content-center">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

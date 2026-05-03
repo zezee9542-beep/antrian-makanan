@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - QR Code Kantin{% endblock %}
+{% block page_title %}QR Code Kantin <span>{{ canteen.name }}</span>{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="card card-glass text-center p-5 mb-4">
+            <h4 class="fw-bold text-white mb-3">{{ canteen.name }}</h4>
+            <p class="text-muted mb-4">Cetak QR Code ini dan letakkan di meja atau depan kantin agar siswa bisa menscan untuk memesan makanan.</p>
+            
+            <div class="bg-white p-4 d-inline-block rounded-custom mx-auto mb-4" style="max-width: 300px;">
+                <img src="data:image/png;base64,{{ qr_b64 }}" class="img-fluid" alt="QR Code Kantin">
+            </div>
+            
+            <div>
+                <a href="{% url 'download_qr' %}" class="btn btn-primary-custom px-4 py-2 fw-bold">
+                    <i class="bi bi-download me-2"></i> Download QR Code (PNG)
+                </a>
+            </div>
+        </div>
+        
+        <div class="alert-custom alert-info mx-auto text-center">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>Atau bagikan link langsung:<br><a href="{{ qr_url }}" class="fw-bold" style="word-break: break-all;">{{ qr_url }}</a></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

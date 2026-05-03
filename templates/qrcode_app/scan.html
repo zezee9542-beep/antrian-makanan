@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Scan QR{% endblock %}
+{% block page_title %}Scan QR Kantin{% endblock %}
+
+{% block extra_css %}
+<style>
+    #reader {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        border: 2px solid var(--border-primary);
+        box-shadow: var(--shadow-primary);
+    }
+    #reader video { object-fit: cover; }
+    /* Hide some html5-qrcode default UI */
+    #reader__dashboard_section_csr span { color: var(--text) !important; }
+    #reader a { color: var(--primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6 text-center">
+        
+        <div class="mb-4">
+            <h4 class="fw-bold">Arahkan Kamera ke QR Code</h4>
+            <p class="text-muted">Scan QR Code yang ada di meja kantin untuk melihat menu dan mengambil antrian.</p>
+        </div>
+
+        <div id="reader" class="mb-4"></div>
+
+        <div class="alert-custom alert-info mx-auto" style="max-width: 500px;">
+            <i class="bi bi-info-circle-fill"></i>
+            <div class="text-start">Pastikan memberi izin akses kamera pada browser kamu.</div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function onScanSuccess(decodedText, decodedResult) {
+            // Stop scanner
+            html5QrcodeScanner.clear();
+            // Show loading
+            document.getElementById('reader').innerHTML = `
+                <div class="p-5 text-center bg-surface">
+                    <div class="spinner mb-3 mx-auto"></div>
+                    <h5 class="text-primary">QR Terbaca!</h5>
+                    <p class="text-muted">Membuka menu kantin...</p>
+                </div>
+            `;
+            // Redirect to URL (assuming QR contains the full URL like http://localhost:8000/menu/1/)
+            window.location.href = decodedText;
+        }
+
+        function onScanFailure(error) {
+            // handle scan failure, usually better to ignore and keep scanning
+        }
+
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { fps: 10, qrbox: {width: 250, height: 250} },
+            /* verbose= */ false
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    });
+</script>
+{% endblock %}

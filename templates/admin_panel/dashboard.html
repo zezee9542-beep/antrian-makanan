@@ -1,0 +1,178 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}Admin Dashboard - Smart Food Queue{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block header_title %}Halo, Admin Utama!{% endblock %}
+{% block header_subtitle %}Monitoring Performa &amp; Anomali Sistem{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* GRID LAYOUTS */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+    .middle-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+
+    /* 3 TOP STAT CARDS */
+    .stat-card { border-radius: 16px; padding: 1.5rem 1.5rem 0 1.5rem; position: relative; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); border: 1px solid rgba(255,255,255,0.6); display: flex; flex-direction: column; height: 190px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); }
+    .card-user { background: linear-gradient(135deg, #E6F4F1, #CFEDEA); }
+    .card-user .stat-title { color: #5F8F8B; } .card-user .stat-value { color: #1F3D3A; } .card-user .stat-icon { color: #2F9E8F; }
+    .card-order { background: linear-gradient(135deg, #EAF2FF, #D6E4FF); }
+    .card-order .stat-title { color: #64748B; } .card-order .stat-value { color: #1E3A8A; } .card-order .stat-icon { color: #3B82F6; }
+    .card-canteen { background: linear-gradient(135deg, #E8F7EE, #CFF1DD); }
+    .card-canteen .stat-title { color: #4D7C0F; } .card-canteen .stat-value { color: #14532D; } .card-canteen .stat-icon { color: #22C55E; }
+    .stat-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .stat-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 2.8rem; font-weight: 900; line-height: 1.2; }
+    .stat-icon { font-size: 1.8rem; opacity: 0.9; }
+    .chart-container-wave { margin-top: auto; margin-left: -1.5rem; margin-right: -1.5rem; width: calc(100% + 3rem); height: 85px; margin-bottom: 0; }
+    .chart-container-bar { margin-top: auto; width: 100%; height: 85px; padding-bottom: 12px; }
+
+    /* ANOMALY CARD */
+    .anomaly-card { background: var(--card-white); border-radius: 16px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); display: flex; align-items: center; gap: 2rem; border: 1px solid #e2e8f0; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .anomaly-card:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08); }
+    .anomaly-icon-container { position: relative; width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; }
+    .ai-img { width: 90px; height: 90px; z-index: 5; object-fit: contain; }
+    .ring-1 { position: absolute; width: 105px; height: 105px; border-radius: 50%; background-color: rgba(98, 168, 154, 0.2); z-index: 2; }
+    .ring-2 { position: absolute; width: 130px; height: 130px; border-radius: 50%; background-color: rgba(98, 168, 154, 0.1); z-index: 1; }
+    .status-dot { position: absolute; bottom: 8px; right: 18px; width: 24px; height: 24px; background: #10b981; border-radius: 50%; border: 4px solid white; z-index: 10; }
+    .anomaly-content { flex-grow: 1; }
+    .anomaly-content h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; }
+    .bell-glow { color: #62a89a; filter: drop-shadow(0 0 8px rgba(98, 168, 154, 0.6)); }
+    .anomaly-list { list-style: none; padding: 0; margin: 0; }
+    .anomaly-list li { font-size: 1rem; font-weight: 500; color: var(--text-dark); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 10px; }
+    .anomaly-list li i { color: #f59e0b; font-size: 1.2rem; }
+
+    /* TARGET CHART CARD */
+    .target-card { background: var(--card-white); border-radius: 16px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .target-card:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08); }
+    .target-header { text-align: right; margin-bottom: 0.5rem; border-bottom: 2px solid var(--sidebar-bg); padding-bottom: 5px; }
+    .target-label { font-size: 0.85rem; font-weight: 700; color: var(--text-dark); }
+    .chart-container-tall { flex-grow: 1; position: relative; width: 100%; min-height: 120px; }
+
+    /* BOTTOM SECTION */
+    .bottom-section { background: var(--card-white); border-radius: 16px; padding: 2.5rem; margin-top: 1.5rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; }
+    .line-chart-title { text-align: center; font-weight: 700; color: var(--text-dark); font-size: 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .line-chart-title::before { content: ''; display: inline-block; width: 24px; height: 4px; background: var(--active-pill); border-radius: 2px; }
+    .main-chart-wrapper { width: 100%; height: 200px; margin-bottom: 2.5rem; position: relative; }
+    .table-custom { width: 100%; border-collapse: collapse; }
+    .table-custom th { color: var(--text-dark); font-weight: 700; font-size: 1.05rem; padding: 1rem 0; border-bottom: 1px dashed #cbd5e1; text-align: left; }
+    .table-custom td { padding: 1rem 0; font-size: 1rem; font-weight: 500; color: var(--text-dark); border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    .status-ok { color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .status-ok i { font-size: 1.2rem; }
+
+    @media (max-width: 1200px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } .middle-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } .anomaly-card { flex-direction: column; text-align: center; } .anomaly-content h3 { justify-content: center; } }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- ROW 1: 3 CARDS -->
+    <div class="dashboard-grid">
+        <div class="stat-card card-user">
+            <div class="stat-header"><div class="stat-title">TOTAL USER</div><i class="bi bi-people stat-icon"></i></div>
+            <div class="stat-value">{{ total_users|default:"1,250" }}</div>
+            <div class="chart-container-wave"><canvas id="userChart"></canvas></div>
+        </div>
+        <div class="stat-card card-order">
+            <div class="stat-header"><div class="stat-title">TOTAL TRANSAKSI</div><i class="bi bi-list-task stat-icon"></i></div>
+            <div class="stat-value">{{ total_orders|default:"450" }}</div>
+            <div class="chart-container-bar"><canvas id="orderMiniChart"></canvas></div>
+        </div>
+        <div class="stat-card card-canteen">
+            <div class="stat-header"><div class="stat-title">KANTIN AKTIF</div><i class="bi bi-shop stat-icon"></i></div>
+            <div class="stat-value">{{ total_canteens|default:"8" }}</div>
+            <div class="chart-container-bar"><canvas id="canteenChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- ROW 2: ANOMALY & TARGET CHART -->
+    <div class="middle-grid">
+        <div class="anomaly-card">
+            <div class="anomaly-icon-container">
+                <img src="{% static 'img/ai.png' %}" alt="AI Brain" class="ai-img">
+                <div class="ring-1"></div><div class="ring-2"></div><div class="status-dot"></div>
+            </div>
+            <div class="anomaly-content">
+                <h3>AI Deteksi Anomali <i class="bi bi-bell-fill bell-glow ms-2"></i></h3>
+                <div id="anomalyContainer">
+                    <ul class="anomaly-list"><li><i class="bi bi-hourglass-split text-info"></i> Memuat data deteksi...</li></ul>
+                </div>
+            </div>
+        </div>
+        <div class="target-card">
+            <div class="target-header"><span class="target-label">Target: 500</span></div>
+            <div class="chart-container-tall"><canvas id="targetChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION -->
+    <div class="bottom-section">
+        <div class="line-chart-title">Chart Global (Volume Keseluruhan)</div>
+        <div class="main-chart-wrapper"><canvas id="apiChart"></canvas></div>
+        <div class="table-responsive">
+            <table class="table-custom mt-4" style="min-width: 600px;">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">System Status</th>
+                        <th style="width: 25%;">CPU</th>
+                        <th style="width: 25%;">Memory</th>
+                        <th style="width: 20%;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Waktu 14:05:01</td><td>CPU: 25%</td><td>Memory: 60%</td><td><span class="status-ok">OK <i class="bi bi-check-circle-fill"></i></span></td></tr>
+                    <tr><td>Waktu 14:04:01</td><td>CPU: 28%</td><td>Memory: 62%</td><td><span class="status-ok">OK <i class="bi bi-check-circle-fill"></i></span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    Chart.defaults.font.family = "'Roboto', sans-serif";
+    Chart.defaults.color = '#64748b';
+    const cardTooltip = { backgroundColor: 'rgba(17, 24, 39, 0.95)', titleFont: { size: 14, weight: 'bold', family: 'Roboto' }, bodyFont: { size: 13, weight: '500', family: 'Roboto' }, padding: 12, cornerRadius: 8, displayColors: false };
+    const createGradient = (ctx, colorStart, colorEnd) => { const g = ctx.createLinearGradient(0, 0, 0, 100); g.addColorStop(0, colorStart); g.addColorStop(1, colorEnd); return g; };
+
+    // 1. User Wave Chart
+    const userCtx = document.getElementById('userChart').getContext('2d');
+    new Chart(userCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'User Baru', data: [10, 20, 15, 30, 25, 40, 50], borderColor: '#7ED7C1', backgroundColor: createGradient(userCtx, 'rgba(126,215,193,0.5)', 'rgba(126,215,193,0)'), borderWidth: 3, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: -10 } }, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
+
+    // 2. Order Mini Bar
+    const orderMiniCtx = document.getElementById('orderMiniChart').getContext('2d');
+    new Chart(orderMiniCtx, { type: 'bar', data: { labels: ['A','B','C','D','E','F','G','H','I','J'], datasets: [{ label: 'Transaksi', data: [20, 35, 25, 50, 40, 30, 60, 70, 55, 80], backgroundColor: '#93C5FD', hoverBackgroundColor: '#60A5FA', borderRadius: 4, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
+
+    // 3. Kantin Bar
+    const canteenCtx = document.getElementById('canteenChart').getContext('2d');
+    new Chart(canteenCtx, { type: 'bar', data: { labels: ['A','B','C','D','E','F','G','H','I'], datasets: [{ label: 'Kantin Aktif', data: [3, 4, 2, 5, 4, 6, 7, 5, 8], backgroundColor: '#86EFAC', hoverBackgroundColor: '#4ADE80', borderRadius: 4, barPercentage: 0.6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
+
+    // 4. Target Bar Chart
+    const targetCtx = document.getElementById('targetChart').getContext('2d');
+    const targetGrad = targetCtx.createLinearGradient(0, 0, 0, 150); targetGrad.addColorStop(0, '#6eb5a8'); targetGrad.addColorStop(1, '#a2d2c9');
+    new Chart(targetCtx, { type: 'bar', data: { labels: ['06','08','12','15','18','20'], datasets: [{ label: 'Volume', data: [310, 420, 480, 360, 520, 310], backgroundColor: targetGrad, hoverBackgroundColor: '#111827', borderRadius: { topLeft: 6, topRight: 6 }, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: true, grid: { display: false }, ticks: { color: '#64748b', font: { weight: '600', size: 11 } } }, y: { display: true, min: 0, max: 550, grid: { borderDash: [4,4], color: '#e2e8f0' }, ticks: { stepSize: 150, color: '#64748b', font: { weight: '600', size: 11 } } } }, interaction: { mode: 'index', intersect: false } } });
+
+    // 5. API Global Line Chart
+    const apiCtx = document.getElementById('apiChart').getContext('2d');
+    new Chart(apiCtx, { type: 'line', data: { labels: ['Sen','Sel','Rab','Kam','Jum','Sab','Min'], datasets: [{ label: 'Volume Global', data: [1500, 2300, 1800, 3200, 2800, 4500, 3900], borderColor: '#4a8b7f', backgroundColor: createGradient(apiCtx, 'rgba(110,181,168,0.3)', 'rgba(110,181,168,0)'), borderWidth: 3, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#ffffff', pointBorderColor: '#4a8b7f', pointBorderWidth: 2, pointHoverRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { grid: { display: false }, ticks: { font: { weight: '600' }, color: '#64748b' } }, y: { min: 0, grid: { borderDash: [6,6], color: '#cbd5e1' }, ticks: { font: { weight: '600' }, color: '#64748b' } } }, interaction: { mode: 'index', intersect: false } } });
+
+    // Fetch AI Anomaly Data
+    fetch('/api/ai/anomaly/')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('anomalyContainer');
+            if (data.anomalies && data.anomalies.length > 0) {
+                let html = '<ul class="anomaly-list">';
+                data.anomalies.slice(0, 2).forEach(a => { html += `<li><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;"></i> User ${a.user__username} - ${a.event_type}</li>`; });
+                html += '</ul>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<ul class="anomaly-list"><li><i class="bi bi-check-circle-fill text-success"></i> Sistem berjalan normal.</li></ul>';
+            }
+        })
+        .catch(() => {
+            document.getElementById('anomalyContainer').innerHTML = '<ul class="anomaly-list"><li><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;"></i> User X (ID: 1023) - 50 order dalam hitungan menit</li><li><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;"></i> Transaksi tidak normal (&gt; Rp 1 Juta)</li></ul>';
+        });
+</script>
+{% endblock %}

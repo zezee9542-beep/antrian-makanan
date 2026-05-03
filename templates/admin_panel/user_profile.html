@@ -1,0 +1,669 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}Profile {{ user_profile.username|default:"User" }} - Smart Food Queue{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block header_title %}Profil User{% endblock %}
+{% block header_subtitle %}Informasi lengkap pengguna sistem{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --card-bg: #ffffff;
+        --text-dark: #111827;
+        --text-muted: #64748b;
+        --primary-green: #6eb5a8;
+        --header-bg: #a2d2c9;
+        --danger-red: #ef4444;
+        --dark-btn: #334155;
+        --border-color: #e2e8f0;
+    }
+
+    /* PROFILE HEADER */
+    .profile-header {
+        background-color: white; color: var(--text-dark);
+        border-radius: 16px; padding: 2rem;
+        margin-bottom: 2rem;
+        display: flex; align-items: center; justify-content: space-between;
+        position: relative; overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border-color);
+    }
+    .profile-header > * { position: relative; z-index: 1; }
+    .header-vector {
+        position: absolute; right: 0; bottom: 0; height: 100%;
+        opacity: 0.4; z-index: 0; pointer-events: none;
+        object-fit: contain;
+    }
+
+    .avatar-container {
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-container img {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+    }
+
+    .user-title {
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--text-dark);
+        margin: 0 0 0.3rem 0;
+        letter-spacing: -0.5px;
+    }
+
+    .user-subtitle {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        opacity: 0.8;
+        margin: 0;
+    }
+
+    .badge-status {
+        background: rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 0.4rem 1.2rem;
+        border-radius: 20px;
+        font-weight: 900;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.95rem;
+    }
+
+    .badge-status.active-true {
+        background-color: #5bb4a2;
+        color: white;
+        border: none;
+    }
+
+    .header-chart-box {
+        width: 250px;
+        height: 100px;
+        position: relative;
+        border-left: 2px solid var(--text-dark);
+        border-bottom: 2px solid var(--text-dark);
+    }
+
+    .header-chart-box::before {
+        content: 'User';
+        position: absolute;
+        left: -30px;
+        top: 50%;
+        transform: translateY(-50%) rotate(-90deg);
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .header-chart-box::after {
+        content: 'Waktu';
+        position: absolute;
+        bottom: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .header-arrow-y {
+        position: absolute;
+        top: -5px;
+        left: -6px;
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    .header-arrow-x {
+        position: absolute;
+        bottom: -11px;
+        right: -5px;
+        font-size: 0.8rem;
+        font-weight: 900;
+    }
+
+    /* GRID */
+    .main-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.2rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .col-info {
+        grid-column: span 5;
+    }
+
+    .col-stat {
+        grid-column: span 7;
+    }
+
+    .col-riwayat {
+        grid-column: span 4;
+    }
+
+    .col-aktivitas {
+        grid-column: span 4;
+    }
+
+    .col-ai {
+        grid-column: span 4;
+    }
+
+    .col-aksi {
+        grid-column: span 12;
+    }
+
+    .card-custom {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border-color);
+        position: relative;
+        height: 100%;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    /* INFO USER */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 0.3rem 0;
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-label {
+        font-weight: 900;
+        color: var(--text-dark);
+    }
+
+    .info-value {
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    /* RIWAYAT */
+    .riwayat-bar-container {
+        width: 120px;
+        font-size: 0.7rem;
+        font-weight: 900;
+    }
+
+    .riwayat-bar-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .riwayat-bar-label {
+        width: 70px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .riwayat-bar {
+        height: 8px;
+        border-radius: 4px;
+    }
+
+    .riwayat-table {
+        width: 100%;
+        border-spacing: 0 6px;
+        border-collapse: separate;
+    }
+
+    .riwayat-table td {
+        padding: 0.6rem 1rem;
+        background: #eefdf9;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .riwayat-table tr td:first-child {
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+        color: var(--text-muted);
+    }
+
+    .riwayat-table tr td:last-child {
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+        text-align: right;
+    }
+
+    .status-badge {
+        background: #a7f3d0;
+        color: #065f46;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* TIMELINE */
+    .timeline {
+        position: relative;
+        padding-left: 0;
+        margin-top: 1.5rem;
+        list-style: none;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 5px;
+        bottom: 0;
+        width: 2px;
+        background: #cbd5e1;
+        z-index: 1;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        padding-left: 30px;
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #6eb5a8;
+        z-index: 2;
+    }
+
+    .timeline-time {
+        font-size: 0.95rem;
+        font-weight: 900;
+        width: 60px;
+        flex-shrink: 0;
+        color: #111827;
+        margin-top: 1px;
+    }
+
+    .timeline-text {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #111827;
+        margin-top: 1px;
+    }
+
+    /* AI */
+    .radar-container {
+        width: 140px;
+        height: 140px;
+    }
+
+    /* AKSI */
+    .btn-action {
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: white;
+        transition: 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn-teal {
+        background-color: #519b8e;
+    }
+
+    .btn-red {
+        background-color: #f87171;
+    }
+
+    .btn-dark {
+        background-color: #334155;
+    }
+
+    .btn-action:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+    }
+
+    .input-catatan {
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        padding: 0.6rem 1rem;
+        width: 100%;
+        font-size: 0.95rem;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .input-catatan:focus {
+        outline: none;
+        border-color: var(--primary-green);
+        box-shadow: 0 0 0 3px rgba(110, 181, 168, 0.2);
+    }
+
+    @media (max-width: 1200px) {
+        .col-info {
+            grid-column: span 12;
+        }
+
+        .col-stat {
+            grid-column: span 12;
+        }
+
+        .col-riwayat,
+        .col-aktivitas,
+        .col-ai {
+            grid-column: span 6;
+        }
+    }
+
+    @media (max-width: 768px) {
+
+        .col-riwayat,
+        .col-aktivitas,
+        .col-ai {
+            grid-column: span 12;
+        }
+
+        .profile-header {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block top_header %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 fw-bold text-dark" style="letter-spacing: -0.5px;">Profil Detail Pengguna</h3>
+    <a href="{% url 'admin_users' %}" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm"
+        style="color: var(--text-dark); background-color: #ffffff; border: 1px solid #e2e8f0;">
+        Kembali ke Daftar User <i class="bi bi-arrow-right ms-2"></i>
+    </a>
+</div>
+
+<!-- PROFILE HEADER -->
+<div class="profile-header">
+    <img src="{% static 'img/user.png' %}" alt="Vector" class="header-vector">
+    <div class="d-flex align-items-center gap-3">
+        <div class="avatar-container">
+            <img src="https://ui-avatars.com/api/?name={{ user_profile.username|urlencode }}&background=e0f5e6&color=15a03a&size=100&bold=true"
+                alt="Avatar" style="border: 4px solid #1f2937;">
+        </div>
+        <div>
+            <h1 class="user-title">{{ user_profile.username|default:"Reza Siswa" }}</h1>
+            <p class="user-subtitle">
+                ID: {{ user_profile.id|stringformat:"05d"|default:"10023" }} |
+                {% if user_profile.role == 'student' %}Siswa (Pelanggan)
+                {% elif user_profile.role == 'vendor' %}Penjual (Kantin)
+                {% else %}Admin Sistem{% endif %} |
+                {{ user_profile.email|default:"reza@siswa.sch.id" }}
+            </p>
+            <p class="user-subtitle mt-1" style="font-size: 0.9rem;">
+                Bergabung: {{ user_profile.date_joined|date:"d M Y"|default:"12 Jan 2024" }} | Terakhir Login: {% if user_profile.last_login %}{{ user_profile.last_login|date:"j M Y, H:i" }}{% else %}5 Apr 2026, 14:02{% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<!-- 4 STAT CARDS -->
+<div class="row g-3 mb-4">
+    <!-- Card 1 (Blue) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-blue h-100 position-relative overflow-hidden" style="background-color: #e0f0ff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div class="d-flex align-items-center mb-1">
+                <div style="background-color: white; border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                    <i class="bi {% if user_profile.role == 'student' %}bi-list-task{% elif user_profile.role == 'vendor' %}bi-box-seam{% else %}bi-building{% endif %}" style="color: #3b82f6; font-size: 1.3rem;"></i>
+                </div>
+                <div style="color: #1e3a8a; font-size: 1.5rem; font-weight: 800;">{% if user_profile.role == 'admin' %}12{% else %}5{% endif %} <span style="font-size: 0.9rem; font-weight: 600;">{% if user_profile.role == 'admin' %}kantin{% else %}kali{% endif %}</span></div>
+            </div>
+            <div style="color: #94a3b8; font-size: 0.9rem; font-weight: 600;">
+                {% if user_profile.role == 'student' %}Total Pesanan
+                {% elif user_profile.role == 'vendor' %}Total Menu
+                {% else %}Kantin Terdaftar{% endif %}
+            </div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 60%; height: 60%;">
+                <canvas id="chartBlue"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card 2 (Green) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-green h-100 position-relative overflow-hidden" style="background-color: #e1fce8; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div class="d-flex align-items-center mb-1">
+                <div style="background-color: #bbf7d0; border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                    <i class="bi {% if user_profile.role == 'admin' %}bi-person-check{% else %}bi-check-circle{% endif %}" style="color: #10b981; font-size: 1.3rem;"></i>
+                </div>
+                <div style="color: #065f46; font-size: 1.5rem; font-weight: 800;">{% if user_profile.role == 'admin' %}245{% else %}5{% endif %} <span style="font-size: 0.9rem; font-weight: 600;">{% if user_profile.role == 'admin' %}user{% else %}kali{% endif %}</span></div>
+            </div>
+            <div style="color: #94a3b8; font-size: 0.9rem; font-weight: 600;">
+                {% if user_profile.role == 'student' %}Pesanan Selesai
+                {% elif user_profile.role == 'vendor' %}Pesanan Selesai
+                {% else %}User Aktif{% endif %}
+            </div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 60%; height: 60%;">
+                <canvas id="chartGreen"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card 3 (Orange) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-orange h-100 position-relative overflow-hidden" style="background-color: #fff7ed; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div class="d-flex align-items-center mb-1">
+                <div style="background-color: white; border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                    <i class="bi {% if user_profile.role == 'admin' %}bi-flag{% else %}bi-clock{% endif %}" style="color: #f59e0b; font-size: 1.3rem;"></i>
+                </div>
+                <div style="color: #9a3412; font-size: 1.5rem; font-weight: 800;">{% if user_profile.role == 'admin' %}2{% else %}5{% endif %} <span style="font-size: 0.9rem; font-weight: 600;">{% if user_profile.role == 'admin' %}tiket{% else %}kali{% endif %}</span></div>
+            </div>
+            <div style="color: #94a3b8; font-size: 0.9rem; font-weight: 600;">
+                {% if user_profile.role == 'student' %}Menunggu
+                {% elif user_profile.role == 'vendor' %}Antrean
+                {% else %}Laporan User{% endif %}
+            </div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 60%; height: 60%;">
+                <canvas id="chartOrange"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4 (Red) -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-red h-100 position-relative overflow-hidden" style="background-color: #fef2f2; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div class="d-flex align-items-center mb-1">
+                <div style="background-color: white; border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                    <i class="bi {% if user_profile.role == 'admin' %}bi-exclamation-triangle{% else %}bi-x-circle{% endif %}" style="color: #ef4444; font-size: 1.3rem;"></i>
+                </div>
+                <div style="color: #991b1b; font-size: 1.5rem; font-weight: 800;">{% if user_profile.role == 'admin' %}0{% else %}5{% endif %} <span style="font-size: 0.9rem; font-weight: 600;">{% if user_profile.role == 'admin' %}kasus{% else %}kali{% endif %}</span></div>
+            </div>
+            <div style="color: #94a3b8; font-size: 0.9rem; font-weight: 600;">
+                {% if user_profile.role == 'admin' %}Sistem Error
+                {% else %}Dibatalkan{% endif %}
+            </div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 60%; height: 60%;">
+                <canvas id="chartRed"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- STATISTIK (Kiri) -->
+    <div class="col-lg-8">
+        <div class="card-custom h-100 d-flex flex-column" style="min-height: 350px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div style="font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; color: var(--text-dark); text-transform: uppercase;">
+                    {% if user_profile.role == 'student' %}STATISTIK TRANSAKSI USER
+                    {% elif user_profile.role == 'vendor' %}STATISTIK PENJUALAN KANTIN
+                    {% else %}STATISTIK PENGGUNAAN SISTEM{% endif %}
+                </div>
+                <div>
+                    <select class="form-select border-0 text-muted fw-bold shadow-sm"
+                        style="background-color: transparent; cursor: pointer; width: auto; font-size: 0.9rem;">
+                        <option>2024</option>
+                        <option>2025</option>
+                        <option>2026</option>
+                    </select>
+                </div>
+            </div>
+            <hr style="border-color: #e2e8f0; margin: -0.5rem 0 1.5rem 0;">
+            <div class="flex-grow-1" style="position: relative; width: 100%;">
+                <canvas id="statistikBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIWAYAT PESANAN (Kanan, "apa gtu") -->
+    <div class="col-lg-4 d-flex flex-column gap-3">
+        <div class="card-custom">
+            <div class="card-title mb-4" style="font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; color: var(--text-dark); text-transform: uppercase;">
+                {% if user_profile.role == 'student' %}RIWAYAT PESANAN
+                {% elif user_profile.role == 'vendor' %}PESANAN MASUK TERBARU
+                {% else %}LOG AKTIVITAS{% endif %}
+            </div>
+            <table class="riwayat-table mt-3" style="width: 100%; border-collapse: separate; border-spacing: 0 0.8rem;">
+                {% if user_profile.role == 'student' or user_profile.role == 'vendor' %}
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">#1233</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Nasi Goreng</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-success px-3 py-2"><i class="bi bi-check2"></i> Selesai</span></td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">#1230</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Mie Ayam</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-success px-3 py-2"><i class="bi bi-check2"></i> Selesai</span></td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">#1228</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Es Teh Manis</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-success px-3 py-2"><i class="bi bi-check2"></i> Selesai</span></td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">#1225</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Ayam Penyet</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-warning px-3 py-2" style="color: #9a3412 !important;"><i class="bi bi-clock"></i> Proses</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">14:02</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Login ke Sistem</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-primary px-3 py-2"><i class="bi bi-shield-check"></i> Auth</span></td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">12:15</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Hapus Kantin</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-danger px-3 py-2"><i class="bi bi-trash"></i> Data</span></td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">10:30</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Tambah User</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-success px-3 py-2"><i class="bi bi-person-plus"></i> Data</span></td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-weight: bold;">09:00</td>
+                    <td style="color: var(--text-dark); font-weight: 800;">Ubah Pengaturan</td>
+                    <td class="text-end"><span class="badge rounded-pill bg-secondary px-3 py-2"><i class="bi bi-gear"></i> Sys</span></td>
+                </tr>
+                {% endif %}
+            </table>
+            <div class="text-center mt-4">
+                <button class="btn btn-light rounded-pill px-4" style="color: #6eb5a8; border: 1px solid #6eb5a8; padding: 0.6rem 1.5rem; font-weight: 700; width: 100%; transition: all 0.3s;" onmouseover="this.style.backgroundColor='#6eb5a8'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6eb5a8';">
+                    {% if user_profile.role == 'student' %}Lihat Semua Riwayat
+                    {% elif user_profile.role == 'vendor' %}Lihat Semua Pesanan
+                    {% else %}Lihat Semua Log{% endif %}
+                </button>
+            </div>
+        </div>
+
+        <!-- AKSI ADMIN -->
+        <div class="card-custom flex-grow-1">
+            <div class="card-title mb-3" style="font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; color: var(--text-dark); text-transform: uppercase;">
+                AKSI ADMIN
+            </div>
+            <div class="d-flex flex-column gap-2">
+                <button class="btn w-100 rounded-3 text-start fw-bold" style="background-color: #f1f5f9; color: #64748b; border: none; padding: 0.75rem 1rem;"><i class="bi bi-key me-2"></i> Reset Kata Sandi</button>
+                <button class="btn w-100 rounded-3 text-start fw-bold" style="background-color: #fee2e2; color: #ef4444; border: none; padding: 0.75rem 1rem;"><i class="bi bi-shield-lock me-2"></i> Blokir Akun</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    Chart.defaults.font.family = "'Roboto', sans-serif";
+    Chart.defaults.color = "#111827";
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(17, 24, 39, 0.9)';
+    Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+    Chart.defaults.plugins.tooltip.bodyColor = '#eefdf9';
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.displayColors = false;
+
+    // 3. Statistik - Double Bar Chart
+    new Chart(document.getElementById('statistikBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'], datasets: [{ label: 'Pemasukan', data: [60, 85, 58, 73, 47, 45, 73, 85, 62, 77, 60, 85], backgroundColor: '#0069AC', borderRadius: 4, barPercentage: 0.6, categoryPercentage: 0.8 }, { label: 'Pengeluaran', data: [40, 5, 20, 62, 60, 8, 50, 62, 47, 23, 6, 31], backgroundColor: '#7BA8FF', borderRadius: 4, barPercentage: 0.6, categoryPercentage: 0.8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9ca3af' } }, y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#9ca3af', stepSize: 10 }, border: { display: false } } } } });
+
+    // WAVE CHARTS (4 Cards)
+    const makeWave = (ctx, colorStart, colorEnd) => {
+        const g = ctx.createLinearGradient(0, 0, 0, 100);
+        g.addColorStop(0, colorStart);
+        g.addColorStop(1, colorEnd);
+        return g;
+    };
+    const waveOpts = {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { bottom: -10, left: -10, right: -10, top: 10 } },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false, min: 0 } },
+        interaction: { mode: 'index', intersect: false },
+        elements: { line: { tension: 0.4 } }
+    };
+    const waveData = [2, 5, 3, 6, 4, 7, 5, 8];
+
+    const cb = document.getElementById('chartBlue').getContext('2d');
+    new Chart(cb, { type: 'line', data: { labels: ['1','2','3','4','5','6','7','8'], datasets: [{ data: waveData, borderColor: '#3b82f6', backgroundColor: makeWave(cb, 'rgba(59,130,246,0.3)', 'rgba(59,130,246,0.01)'), borderWidth: 2, fill: true, pointRadius: 0 }]}, options: waveOpts });
+
+    const cg = document.getElementById('chartGreen').getContext('2d');
+    new Chart(cg, { type: 'line', data: { labels: ['1','2','3','4','5','6','7','8'], datasets: [{ data: waveData, borderColor: '#10b981', backgroundColor: makeWave(cg, 'rgba(16,185,129,0.3)', 'rgba(16,185,129,0.01)'), borderWidth: 2, fill: true, pointRadius: 0 }]}, options: waveOpts });
+
+    const co = document.getElementById('chartOrange').getContext('2d');
+    new Chart(co, { type: 'line', data: { labels: ['1','2','3','4','5','6','7','8'], datasets: [{ data: waveData, borderColor: '#f59e0b', backgroundColor: makeWave(co, 'rgba(245,158,11,0.3)', 'rgba(245,158,11,0.01)'), borderWidth: 2, fill: true, pointRadius: 0 }]}, options: waveOpts });
+
+    const cr = document.getElementById('chartRed').getContext('2d');
+    new Chart(cr, { type: 'line', data: { labels: ['1','2','3','4','5','6','7','8'], datasets: [{ data: waveData, borderColor: '#ef4444', backgroundColor: makeWave(cr, 'rgba(239,68,68,0.3)', 'rgba(239,68,68,0.01)'), borderWidth: 2, fill: true, pointRadius: 0 }]}, options: waveOpts });
+
+</script>
+{% endblock %}

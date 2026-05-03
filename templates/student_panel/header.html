@@ -1,0 +1,43 @@
+<div class="student-top-header bg-white d-flex justify-content-between align-items-center mb-4 border-bottom shadow-sm" style="margin: 0 -1.5rem 2rem -1.5rem; padding: 1.25rem 2rem; border-color: #e2e8f0; position: sticky; top: 0; z-index: 1000;">
+    <div class="d-flex align-items-center gap-3">
+        <!-- Mobile Sidebar Toggle -->
+        <button class="btn btn-white d-lg-none shadow-sm" onclick="openSidebar()" style="border-radius: 12px; border: 1px solid #e2e8f0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: white;">
+            <i class="bi bi-list fs-5 text-dark"></i>
+        </button>
+        
+        <!-- Welcome Text -->
+        <div class="header-title">
+            <h1 class="fw-bold mb-1" style="font-size: 1.5rem; color: #0f172a; letter-spacing: -0.5px;">
+                {% block header_title %}Halo, {{ user.first_name|default:user.username }}! <span style="font-size: 1.3rem;">👋</span>{% endblock %}
+            </h1>
+            <p class="text-muted mb-0" style="font-size: 0.85rem; font-weight: 500;">
+                {% block header_subtitle %}Hari ini mau makan apa? Yuk jelajahi menu favoritmu!{% endblock %}
+            </p>
+        </div>
+    </div>
+    
+    <div class="header-actions d-flex align-items-center gap-3">
+        <!-- Search Bar -->
+        <div class="d-none d-md-flex align-items-center bg-white px-3 py-2 rounded-pill shadow-sm" style="border: 1px solid #e2e8f0; width: 260px;">
+            <i class="bi bi-search text-muted me-2"></i>
+            <input type="text" placeholder="Cari makanan atau minuman..." class="border-0 bg-transparent w-100" style="outline: none; font-size: 0.9rem; color: #334155;">
+        </div>
+
+        <!-- Notification Bell -->
+        <a href="{% url 'order_history' %}" class="position-relative bg-white shadow-sm d-flex align-items-center justify-content-center text-dark text-decoration-none" style="width: 40px; height: 40px; border-radius: 12px; border: 1px solid #e2e8f0; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+            <i class="bi bi-bell fs-5" style="color: #475569;"></i>
+            <span class="position-absolute translate-middle p-1 bg-danger border border-2 border-white rounded-circle" style="top: 10px; right: 2px;">
+                <span class="visually-hidden">New alerts</span>
+            </span>
+        </a>
+
+        <!-- User Profile Chip -->
+        <a href="#" class="d-flex align-items-center gap-2 bg-white p-1 rounded-pill text-decoration-none shadow-sm" style="border: 1px solid #e2e8f0; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+            <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:user.username }}&background=f97316&color=fff&font-size=0.33&bold=true" alt="Avatar" class="rounded-circle" style="width: 34px; height: 34px; object-fit: cover; border: 2px solid white;">
+            <div class="d-none d-sm-block pe-3 ps-1">
+                <div class="fw-bold text-dark" style="font-size: 0.85rem; line-height: 1.2;">{{ user.first_name|default:user.username }}</div>
+                <div class="text-muted" style="font-size: 0.75rem; line-height: 1.2;">Siswa</div>
+            </div>
+        </a>
+    </div>
+</div>

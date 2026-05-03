@@ -1,0 +1,434 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Smart Food Queue</title>
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --text-dark: #111827;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fafaf9; /* Soft background like photo */
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 1s ease-in-out forwards;
+        }
+
+        .delay-100 { animation-delay: 100ms; opacity: 0; }
+        .delay-200 { animation-delay: 200ms; opacity: 0; }
+        .delay-300 { animation-delay: 300ms; opacity: 0; }
+
+        .auth-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* LEFT SIDE */
+        .auth-left {
+            width: 55%;
+            display: none;
+            flex-direction: column;
+            position: relative;
+            background-image: url("{% static 'img/vector1.png' %}");
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        @media (min-width: 992px) {
+            .auth-left {
+                display: flex;
+            }
+        }
+
+        .auth-content {
+            padding: 4rem 4rem 1rem 4rem;
+            z-index: 2;
+        }
+
+        .brand-text {
+            line-height: 1.1;
+        }
+
+        .badge-modern {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-bottom: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 1rem;
+            color: #111827;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-title span {
+            color: var(--primary);
+        }
+
+        .hero-text {
+            font-size: 0.95rem;
+            color: #4b5563;
+            line-height: 1.6;
+            max-width: 80%;
+            margin-bottom: 0;
+        }
+
+        /* RIGHT SIDE */
+        .auth-right {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: #ffffff;
+            z-index: 3;
+        }
+
+        @media (min-width: 992px) {
+            .auth-right {
+                width: 45%;
+                padding: 4rem;
+                border-top-left-radius: 2.5rem;
+                border-bottom-left-radius: 2.5rem;
+                box-shadow: -15px 0 40px rgba(0,0,0,0.04);
+            }
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card h2 {
+            font-weight: 800;
+            color: var(--text-dark);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-size: 2.2rem;
+        }
+
+        .login-card p.subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group-custom {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group-custom i.icon-left {
+            position: absolute;
+            left: 15px;
+            color: #9ca3af;
+            font-size: 1.1rem;
+            z-index: 4;
+        }
+
+        .input-group-custom input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .input-group-custom input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        
+        .input-group-custom input::placeholder {
+            color: #9ca3af;
+        }
+
+        .input-group-custom i.icon-right {
+            position: absolute;
+            right: 15px;
+            color: #9ca3af;
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 4;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-top: -0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .forgot-password a {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            background-color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            width: 100%;
+            color: #fff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            transform: translateY(0);
+            box-shadow: 0 5px 0px #c2410c;
+            z-index: 1;
+        }
+
+        .btn-login:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: #fff;
+            transform: translateY(5px);
+            box-shadow: 0 0px 0px #c2410c;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: 1em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: 1em;
+        }
+
+        .social-btn {
+            background-color: #fff;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            box-shadow: 0 5px 0px #9ca3af;
+            margin-bottom: 1rem;
+        }
+
+        .social-btn:hover {
+            background-color: #f9fafb;
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(5px);
+            box-shadow: 0 0px 0px #9ca3af;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .register-link a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <!-- Left Side: Content Overlaid on Background Image -->
+        <div class="auth-left animate-fade-in">
+            <div class="auth-content">
+                <a href="{% url 'landing' %}" class="brand d-flex align-items-center mb-4 animate-fade-up delay-100 text-decoration-none" style="gap: 2px;">
+                    <img src="{% static 'img/logo2.png' %}" alt="Logo" style="height: 64px; border-radius: 8px;">
+                    <div class="brand-text">
+                        <div style="font-size: 2rem; font-weight: 800; color: #111827;">Smart<span style="color: var(--primary);">Food</span></div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div class="auth-right">
+            <div class="login-card animate-fade-up delay-200">
+                <h2>Login</h2>
+                <p class="subtitle">Masuk ke akun Smart Food Queue System</p>
+
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-size: 0.9rem; padding: 10px; border-radius: 8px;">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="padding: 12px;"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if form.errors %}
+                <div class="alert alert-danger" style="font-size: 0.9rem; padding: 10px; border-radius: 8px;">
+                    Email/No. HP atau kata sandi salah.
+                </div>
+                {% endif %}
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Email atau Nomor HP</label>
+                        <div class="input-group-custom">
+                            <i class="bi bi-envelope icon-left"></i>
+                            <input type="{{ form.username.field.widget.input_type|default:'text' }}"
+                                name="{{ form.username.name }}" id="{{ form.username.id_for_label }}"
+                                placeholder="Masukkan email atau nomor HP kamu" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                        <div class="input-group-custom" style="margin-bottom: 0;">
+                            <i class="bi bi-lock icon-left"></i>
+                            <input type="password" name="{{ form.password.name }}"
+                                id="{{ form.password.id_for_label }}" placeholder="Masukkan password kamu" required>
+                            <i class="bi bi-eye icon-right" id="togglePasswordIcon" onclick="togglePassword()"></i>
+                        </div>
+                    </div>
+
+                    <div class="forgot-password">
+                        <a href="#">Lupa Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-login">Login</button>
+                </form>
+
+                <div class="divider">atau login dengan</div>
+
+                <button type="button" class="social-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                    </svg>
+                    Login dengan Google
+                </button>
+                
+                <button type="button" class="social-btn" style="margin-bottom: 0;">
+                    <i class="bi bi-facebook" style="color: #1877F2; font-size: 1.2rem;"></i>
+                    Login dengan Facebook
+                </button>
+
+                <div class="register-link">
+                    Belum punya akun? <a href="{% url 'register' %}">Register sekarang</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordField = document.getElementById('{{ form.password.id_for_label }}');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Detail Pesanan #{{ order.queue_number }}{% endblock %}
+{% block page_title %}Detail Pesanan{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card card-glass mb-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-custom">
+                    <a href="{% url 'vendor_orders' %}" class="btn-icon"><i class="bi bi-arrow-left"></i></a>
+                    <h4 class="fw-bold m-0 flex-grow-1">Pesanan <span class="text-primary">#{{ order.queue_number }}</span></h4>
+                    <span class="badge status-badge badge-{{ order.status }} px-3 py-2 fs-6">{{ order.get_status_display }}</span>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-sm-6 mb-3 mb-sm-0">
+                        <div class="text-muted small mb-1">Pelanggan</div>
+                        <div class="fw-bold fs-5 text-white">{{ order.user.username }}</div>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <div class="text-muted small mb-1">Waktu Pesan</div>
+                        <div class="fw-bold fs-5 text-white">{{ order.created_at|date:"d M Y, H:i" }}</div>
+                    </div>
+                </div>
+
+                <div class="card bg-surface border-custom mb-4">
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush bg-transparent">
+                            {% for item in order.items.all %}
+                            <li class="list-group-item bg-transparent border-custom d-flex justify-content-between align-items-center p-3 text-white">
+                                <div>
+                                    <span class="fw-bold text-primary">{{ item.quantity }}x</span> {{ item.menu_item.name }}
+                                </div>
+                                <span class="fw-bold">Rp {{ item.subtotal }}</span>
+                            </li>
+                            {% endfor %}
+                            <li class="list-group-item bg-transparent border-custom d-flex justify-content-between align-items-center p-3">
+                                <span class="fw-bold text-muted fs-5">Total Harga</span>
+                                <span class="fw-bold text-primary fs-4">Rp {{ order.total_price }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                {% if order.notes %}
+                <div class="alert-custom alert-warning mb-4">
+                    <i class="bi bi-chat-quote-fill fs-4"></i>
+                    <div>
+                        <div class="fw-bold mb-1">Catatan Pelanggan:</div>
+                        {{ order.notes }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- UPDATE STATUS SECTION -->
+                <div class="mt-5">
+                    <h5 class="fw-bold mb-3">Update Status Pesanan</h5>
+                    <form action="{% url 'vendor_update_order' order.id %}" method="POST" class="d-flex flex-wrap gap-2">
+                        {% csrf_token %}
+                        <button type="submit" name="status" value="pending" class="btn {% if order.status == 'pending' %}btn-warning text-dark{% else %}btn-outline-warning text-warning border-warning{% endif %} fw-bold px-4">
+                            Menunggu
+                        </button>
+                        <button type="submit" name="status" value="processing" class="btn {% if order.status == 'processing' %}btn-info text-dark{% else %}btn-outline-info text-info border-info{% endif %} fw-bold px-4">
+                            <i class="bi bi-fire"></i> Diproses
+                        </button>
+                        <button type="submit" name="status" value="done" class="btn {% if order.status == 'done' %}btn-success{% else %}btn-outline-success text-success border-success{% endif %} fw-bold px-4">
+                            <i class="bi bi-check2-all"></i> Selesai
+                        </button>
+                        <button type="submit" name="status" value="cancelled" class="btn {% if order.status == 'cancelled' %}btn-danger{% else %}btn-outline-danger text-danger border-danger{% endif %} fw-bold ms-auto">
+                            Batalkan
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Statistik & AI{% endblock %}
+{% block page_title %}Statistik Kantin & Prediksi AI{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- STATS -->
+    <div class="col-lg-4">
+        <div class="stat-card green mb-4">
+            <i class="bi bi-wallet2 stat-icon"></i>
+            <div class="stat-value fs-3 text-primary mb-1">Rp {{ total_revenue }}</div>
+            <div class="stat-label">Total Pendapatan (All Time)</div>
+        </div>
+        <div class="stat-card purple mb-4">
+            <i class="bi bi-receipt stat-icon"></i>
+            <div class="stat-value text-info">{{ total_orders }}</div>
+            <div class="stat-label">Total Pesanan (All Time)</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header-custom">Menu Terlaris</div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for item in top_items %}
+                    <li class="list-group-item bg-transparent border-custom d-flex justify-content-between align-items-center p-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="fw-bold fs-5 text-muted">#{{ forloop.counter }}</div>
+                            <div class="fw-bold text-white">{{ item.name }}</div>
+                        </div>
+                        <span class="badge bg-surface text-primary border-custom">{{ item.order_count }} terjual</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI & CHARTS -->
+    <div class="col-lg-8">
+        <!-- AI Panel -->
+        <div class="card border-primary mb-4">
+            <div class="card-header-custom bg-primary bg-opacity-10 text-primary border-primary">
+                <div><i class="bi bi-robot me-2"></i> AI Prediksi Permintaan</div>
+            </div>
+            <div class="card-body p-4" id="aiPredictContainer">
+                <div class="d-flex align-items-center gap-3 text-primary">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <div>AI sedang menganalisis pola pesanan...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="card">
+            <div class="card-header-custom">Pendapatan 7 Hari Terakhir</div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Revenue Chart
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                label: 'Pendapatan (Rp)',
+                data: {{ daily_revenue|safe }},
+                backgroundColor: 'rgba(108, 99, 255, 0.7)',
+                borderColor: '#6C63FF',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // AI Prediction API
+    fetch('/api/ai/predict/')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('aiPredictContainer');
+            if (data.peak_hour) {
+                let html = `
+                    <div class="d-flex align-items-start gap-4">
+                        <div class="queue-ring flex-shrink-0" style="width: 100px; height: 100px; box-shadow: none;">
+                            <div class="queue-number-big fs-2 text-primary">${data.peak_hour}:00</div>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-white mb-3">Prediksi Jam Puncak</h5>
+                            <ul class="list-unstyled m-0">
+                                ${data.suggestions.map(s => `<li class="mb-2"><i class="bi bi-stars text-warning me-2"></i> ${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-muted">Data pesanan belum cukup untuk AI melakukan prediksi.</div>';
+            }
+        });
+</script>
+{% endblock %}

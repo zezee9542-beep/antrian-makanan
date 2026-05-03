@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Food Queue{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <div class="brand-icon">
+                        <i class="bi bi-basket2-fill"></i>
+                    </div>
+                    <div>
+                        <div class="brand-text">SmartFood</div>
+                        <div class="brand-sub">Queue System</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">Main Menu</div>
+                
+                {% if user.is_authenticated %}
+                    {% if user.is_sysadmin %}
+                        <div class="nav-item">
+                            <a href="{% url 'admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                                <i class="bi bi-grid-1x2-fill nav-icon"></i> Dashboard
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'admin_users' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">
+                                <i class="bi bi-people-fill nav-icon"></i> Kelola User
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'admin_canteens' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_canteens' %}active{% endif %}">
+                                <i class="bi bi-shop nav-icon"></i> Kelola Kantin
+                            </a>
+                        </div>
+                        <div class="nav-section-label">System</div>
+                        <div class="nav-item">
+                            <a href="{% url 'admin_monitoring' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_monitoring' %}active{% endif %}">
+                                <i class="bi bi-activity nav-icon"></i> Monitoring AI
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'admin_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_logs' %}active{% endif %}">
+                                <i class="bi bi-journal-text nav-icon"></i> Log Aktivitas
+                            </a>
+                        </div>
+                    
+                    {% elif user.is_vendor %}
+                        <div class="nav-item">
+                            <a href="{% url 'vendor_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'vendor_dashboard' %}active{% endif %}">
+                                <i class="bi bi-grid-1x2-fill nav-icon"></i> Dashboard
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'vendor_orders' %}" class="nav-link {% if request.resolver_match.url_name == 'vendor_orders' %}active{% endif %}">
+                                <i class="bi bi-receipt nav-icon"></i> Pesanan Masuk
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'vendor_menu' %}" class="nav-link {% if request.resolver_match.url_name == 'vendor_menu' %}active{% endif %}">
+                                <i class="bi bi-list-ul nav-icon"></i> Kelola Menu
+                            </a>
+                        </div>
+                        <div class="nav-section-label">Alat Kantin</div>
+                        <div class="nav-item">
+                            <a href="{% url 'vendor_stats' %}" class="nav-link {% if request.resolver_match.url_name == 'vendor_stats' %}active{% endif %}">
+                                <i class="bi bi-graph-up nav-icon"></i> Statistik & AI
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'vendor_qr' %}" class="nav-link {% if request.resolver_match.url_name == 'vendor_qr' %}active{% endif %}">
+                                <i class="bi bi-qr-code-scan nav-icon"></i> QR Code Kantin
+                            </a>
+                        </div>
+                    
+                    {% else %}
+                        <!-- STUDENT NAV -->
+                        <div class="nav-item">
+                            <a href="{% url 'student_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}">
+                                <i class="bi bi-house-door-fill nav-icon"></i> Beranda
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'scan_qr' %}" class="nav-link {% if request.resolver_match.url_name == 'scan_qr' %}active{% endif %}">
+                                <i class="bi bi-upc-scan nav-icon"></i> Scan QR Kantin
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'cart' %}" class="nav-link {% if request.resolver_match.url_name == 'cart' %}active{% endif %}">
+                                <i class="bi bi-cart3 nav-icon"></i> Keranjang
+                                <span class="nav-badge" id="cartBadgeSidebar">0</span>
+                            </a>
+                        </div>
+                        <div class="nav-section-label">Riwayat</div>
+                        <div class="nav-item">
+                            <a href="{% url 'order_history' %}" class="nav-link {% if request.resolver_match.url_name == 'order_history' %}active{% endif %}">
+                                <i class="bi bi-clock-history nav-icon"></i> Pesanan Saya
+                            </a>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="text-decoration-none">
+                    <div class="user-card">
+                        <div class="user-avatar">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" alt="Avatar">
+                            {% else %}
+                                {{ user.username|make_list|first|upper }}
+                            {% endif %}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">{{ user.username }}</div>
+                            <div class="user-role">{{ user.get_role_display }}</div>
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <button class="btn-icon d-md-none" id="sidebarToggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <div class="topbar-title">
+                    {% block page_title %}Dashboard{% endblock %}
+                </div>
+
+                <div class="topbar-actions">
+                    {% if user.is_authenticated %}
+                    
+                    <!-- Notifications -->
+                    <div class="position-relative">
+                        <button class="btn-icon" id="notifBtn" onclick="toggleNotif()">
+                            <i class="bi bi-bell"></i>
+                            {% if unread_notifications > 0 %}
+                            <span class="notif-badge" id="notifBadge">{{ unread_notifications }}</span>
+                            {% endif %}
+                        </button>
+                        
+                        <!-- Notif Dropdown -->
+                        <div class="notif-dropdown" id="notifDropdown">
+                            <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 fw-bold">Notifikasi</h6>
+                                <a href="{% url 'notifications' %}" class="text-primary-custom" style="font-size: 12px;">Lihat Semua</a>
+                            </div>
+                            <div id="notifList">
+                                {% for notif in recent_notifications %}
+                                <div class="notif-item {% if not notif.is_read %}unread{% endif %}" onclick="markNotifRead({{ notif.id }})">
+                                    <div class="notif-title">{{ notif.title }}</div>
+                                    <div class="notif-msg">{{ notif.message|truncatechars:50 }}</div>
+                                    <div class="notif-time">{{ notif.created_at|timesince }} lalu</div>
+                                </div>
+                                {% empty %}
+                                <div class="p-4 text-center text-muted">Belum ada notifikasi</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'logout' %}" class="btn-icon text-danger">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </a>
+                    
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn-primary-custom text-decoration-none">Login</a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- PAGE CONTENT -->
+            <div class="page-content page-enter">
+                
+                <!-- Messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert-custom {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-error{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show">
+                            <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+                            <div>{{ message }}</div>
+                            <button type="button" class="btn-close ms-auto bg-transparent border-0" data-bs-dismiss="alert" style="color: inherit;"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Update Cart Badge globally
+        function updateCartBadge() {
+            fetch('/cart/add/0/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(res => {
+                    if (!res.ok) return; // Skip if not logged in or endpoint fails
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.total_items !== undefined) {
+                        const badge = document.getElementById('cartBadgeSidebar');
+                        if (badge) {
+                            badge.textContent = data.total_items;
+                            badge.style.display = data.total_items > 0 ? 'block' : 'none';
+                        }
+                    }
+                }).catch(e => console.log('Cart init check'));
+        }
+
+        // Notification toggle
+        function toggleNotif() {
+            document.getElementById('notifDropdown').classList.toggle('show');
+        }
+
+        function markNotifRead(id) {
+            fetch(`/notifications/${id}/read/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
+                .then(() => window.location.reload());
+        }
+
+        // Close dropdowns on outside click
+        window.onclick = function(event) {
+            if (!event.target.closest('#notifBtn') && !event.target.closest('#notifDropdown')) {
+                const dropdown = document.getElementById('notifDropdown');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', updateCartBadge);
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

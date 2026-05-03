@@ -1,0 +1,474 @@
+{% extends 'student_panel/base_student.html' %}
+
+{% block title %}Smart Food Queue - Dashboard Siswa{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Neo-brutalism Card Style */
+    .neo-card {
+        background: #ffffff;
+        border: 2px solid #1e293b;
+        border-radius: 12px;
+        box-shadow: 4px 4px 0px #1e293b;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+    
+    .neo-card:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px #1e293b;
+    }
+
+    /* AI Recommendation Card Special Style */
+    .ai-card {
+        background: #fff7ed;
+        border: 2px solid var(--primary);
+        box-shadow: 4px 4px 0px var(--primary);
+    }
+    
+    .ai-card:hover {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0px var(--primary);
+    }
+
+    /* Buttons */
+    .btn-shortcut {
+        background: white;
+        border: 2px solid #1e293b;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 4px 0px #1e293b;
+    }
+    
+    .btn-shortcut:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        box-shadow: 0px 0px 0px var(--primary);
+        transform: translate(4px, 4px);
+    }
+    
+    .btn-shortcut i {
+        font-size: 1.5rem;
+    }
+
+    /* Admin-Style Chart Card */
+    .admin-stat-card { 
+        border-radius: 16px; 
+        padding: 1.5rem 1.5rem 0 1.5rem; 
+        position: relative; 
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); 
+        border: 1px solid rgba(255,255,255,0.6); 
+        display: flex; 
+        flex-direction: column; 
+        transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        cursor: pointer; 
+    }
+    .admin-stat-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); 
+    }
+    .admin-card-white { background: #ffffff; }
+    
+    .admin-stat-title { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; text-align: center; margin-bottom: 1rem; }
+    .admin-chart-container { width: 100%; height: 250px; padding-bottom: 1rem; }
+
+    /* Bottom Section Wrapper (Admin Style) */
+    .bottom-section {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+    }
+    @media (max-width: 991px) {
+        .bottom-section {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- QUICK INFO & SHORTCUTS -->
+    <div class="row g-4 mb-4">
+        <!-- QUICK INFO -->
+        <div class="col-lg-6">
+            <div class="neo-card h-100 p-4 d-flex flex-column justify-content-center">
+                {% if active_order %}
+                    <h5 class="fw-bold mb-3 text-dark">Status Pesanan Aktif</h5>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <div class="text-muted small">Nomor Antrian</div>
+                            <div class="fs-1 fw-black" style="color: var(--primary); line-height: 1;">#{{ active_order.queue_number }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-muted small">Status</div>
+                            <span class="badge bg-{{ active_order.status }} fs-6 px-3 py-2 border border-dark rounded-pill">{{ active_order.get_status_display }}</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'queue_status' active_order.id %}" class="btn btn-dark w-100 fw-bold border-0" style="background: #1e293b;">Lacak Antrian</a>
+                {% else %}
+                    <h5 class="fw-bold mb-3 text-dark">Status Pesanan Aktif</h5>
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-bag-x fs-1 mb-2 d-block"></i>
+                        Belum ada pesanan aktif saat ini.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SHORTCUTS -->
+        <div class="col-lg-6">
+            <div class="neo-card h-100 p-4">
+                <h5 class="fw-bold mb-3 text-dark">Akses Cepat</h5>
+                <div class="row g-3">
+                    <div class="col-4">
+                        <a href="#katalog-kantin" class="btn-shortcut h-100">
+                            <i class="bi bi-shop"></i>
+                            <span style="font-size: 0.8rem; text-align: center;">Pesan Makanan</span>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="{% url 'scan_qr' %}" class="btn-shortcut h-100">
+                            <i class="bi bi-qr-code-scan"></i>
+                            <span style="font-size: 0.8rem; text-align: center;">Scan QR</span>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="{% url 'order_history' %}" class="btn-shortcut h-100">
+                            <i class="bi bi-receipt"></i>
+                            <span style="font-size: 0.8rem; text-align: center;">Riwayat</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SPECIAL RECOMMENDATION -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="neo-card p-4 position-relative" style="background: linear-gradient(135deg, #FFF9F0, #FFF0E6); border-color: #f97316;">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="bg-white p-3 rounded-circle border border-2" style="border-color: #f97316 !important; box-shadow: 2px 2px 0px #f97316;">
+                        <i class="bi bi-stars fs-2" style="color: #f97316;"></i>
+                    </div>
+                    <div class="flex-grow-1" id="aiPanel">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="spinner-border spinner-border-sm" style="color: #f97316;" role="status"></div>
+                            <h5 class="fw-bold m-0 text-dark">Menyiapkan menu spesial untukmu...</h5>
+                        </div>
+                        <p class="text-muted mb-0">Sebentar ya, kami sedang mencari hidangan terbaik hari ini.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION WRAPPER -->
+    <div class="bottom-section">
+        <div class="container-fluid px-0">
+        <!-- ANALYTICS CHARTS -->
+    <div class="row mb-4">
+        <h4 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow text-primary"></i> Statistik Pribadi</h4>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <!-- Chart 1 -->
+            <div class="col">
+                <div class="admin-stat-card admin-card-white">
+                    <div class="admin-stat-title">Pengeluaran Minggu Ini</div>
+                    <div class="admin-chart-container">
+                        <canvas id="spendingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Chart 2 -->
+            <div class="col">
+                <div class="admin-stat-card admin-card-white">
+                    <div class="admin-stat-title">Kantin Terfavorit</div>
+                    <div class="admin-chart-container">
+                        <canvas id="canteenChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Chart 3 -->
+            <div class="col">
+                <div class="admin-stat-card admin-card-white">
+                    <div class="admin-stat-title">Waktu Antrian Rata-rata</div>
+                    <div class="admin-chart-container">
+                        <canvas id="queueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Chart 4 -->
+            <div class="col">
+                <div class="admin-stat-card admin-card-white">
+                    <div class="admin-stat-title">Kategori Makanan Favorit</div>
+                    <div class="admin-chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="row g-4" id="katalog-kantin">
+        <!-- CANTEENS -->
+        <div class="col-lg-8">
+            <h4 class="fw-bold mb-3"><i class="bi bi-shop-window text-primary"></i> Katalog Kantin</h4>
+            <div class="row g-3">
+                {% for c in canteens %}
+                <div class="col-md-6">
+                    <a href="{% url 'menu_list' c.id %}" class="text-decoration-none">
+                        <div class="neo-card h-100 p-0">
+                            {% if c.image %}
+                            <img src="{{ c.image.url }}" class="w-100" style="height: 150px; object-fit: cover; border-bottom: 2px solid #1e293b;" alt="{{ c.name }}">
+                            {% else %}
+                            <div class="w-100 bg-light d-flex align-items-center justify-content-center" style="height: 150px; border-bottom: 2px solid #1e293b;">
+                                <i class="bi bi-shop fs-1 text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div class="p-3">
+                                <h6 class="fw-bold text-dark mb-1">{{ c.name }}</h6>
+                                <p class="text-muted small mb-0"><i class="bi bi-geo-alt-fill text-danger"></i> {{ c.location }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="col-12"><div class="neo-card p-4 text-center text-muted">Belum ada kantin yang buka.</div></div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- RECENT ORDERS -->
+        <div class="col-lg-4">
+            <h4 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Pesanan Terakhir</h4>
+            <div class="neo-card">
+                <div class="p-0">
+                    {% for o in recent_orders %}
+                    <a href="{% url 'order_detail' o.id %}" class="text-decoration-none text-dark">
+                        <div class="p-3 border-bottom border-dark d-flex justify-content-between align-items-center" style="transition: background 0.2s;">
+                            <div>
+                                <div class="fw-bold mb-1">#{{ o.queue_number }} - {{ o.canteen.name }}</div>
+                                <div class="small text-muted">{{ o.created_at|date:"d M, H:i" }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold mb-1">Rp {{ o.total_price }}</div>
+                                <span class="badge bg-{{ o.status }} border border-dark text-dark">{{ o.get_status_display }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">Belum ada pesanan terakhir.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart.js Default styling
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.color = '#475569';
+        
+        // Soft Colors Palette
+        // Modern Chart.js Styling
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: 'bold', family: 'Inter' };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 13, weight: '500', family: 'Inter' };
+        Chart.defaults.plugins.tooltip.displayColors = false;
+        
+        const createGradient = (ctx, startColor, endColor) => {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, startColor);
+            gradient.addColorStop(1, endColor);
+            return gradient;
+        };
+
+        // 1. Spending Chart (Bar) - Modern Gradient Bar
+        const ctxSpending = document.getElementById('spendingChart').getContext('2d');
+        const spendingGradient = createGradient(ctxSpending, 'rgba(59, 130, 246, 0.8)', 'rgba(59, 130, 246, 0.1)');
+        new Chart(ctxSpending, {
+            type: 'bar',
+            data: {
+                labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+                datasets: [{
+                    label: 'Pengeluaran (Rp)',
+                    data: [15000, 20000, 12000, 25000, 18000],
+                    backgroundColor: spendingGradient,
+                    hoverBackgroundColor: 'rgba(59, 130, 246, 1)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.6
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { weight: '600' } } },
+                    y: { grid: { borderDash: [5, 5], color: '#e2e8f0' }, beginAtZero: true, ticks: { font: { weight: '500' } } }
+                },
+                interaction: { mode: 'index', intersect: false }
+            }
+        });
+
+        // 2. Canteen Chart (Doughnut) - Clean Doughnut
+        const ctxCanteen = document.getElementById('canteenChart').getContext('2d');
+        new Chart(ctxCanteen, {
+            type: 'doughnut',
+            data: {
+                labels: ['Kantin Ibu Ani', 'Kantin Pak Budi', 'Kantin Sehat', 'Lainnya'],
+                datasets: [{
+                    data: [40, 25, 20, 15],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '75%',
+                plugins: { 
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { weight: '600' } } } 
+                } 
+            }
+        });
+
+        // 3. Queue Time Chart (Line) - Smooth Spline with Fill
+        const ctxQueue = document.getElementById('queueChart').getContext('2d');
+        const queueGradient = createGradient(ctxQueue, 'rgba(16, 185, 129, 0.4)', 'rgba(16, 185, 129, 0)');
+        new Chart(ctxQueue, {
+            type: 'line',
+            data: {
+                labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+                datasets: [{
+                    label: 'Waktu Tunggu (Menit)',
+                    data: [10, 15, 8, 20, 12],
+                    borderColor: '#10b981',
+                    backgroundColor: queueGradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#10b981',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { weight: '600' } } },
+                    y: { grid: { borderDash: [5, 5], color: '#e2e8f0' }, beginAtZero: true, ticks: { font: { weight: '500' } } }
+                },
+                interaction: { mode: 'index', intersect: false }
+            }
+        });
+
+        // 4. Category Chart (Radar instead of Pie for modern look)
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctxCategory, {
+            type: 'radar',
+            data: {
+                labels: ['Makanan Berat', 'Cemilan', 'Minuman', 'Dessert', 'Cepat Saji'],
+                datasets: [{
+                    label: 'Preferensi (%)',
+                    data: [80, 50, 70, 40, 60],
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    borderColor: '#f59e0b',
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#f59e0b',
+                    borderWidth: 2,
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        angleLines: { color: '#e2e8f0' },
+                        grid: { color: '#e2e8f0' },
+                        pointLabels: { font: { family: "'Inter', sans-serif", size: 11, weight: '600' }, color: '#64748b' },
+                        ticks: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Fetch Special Recommendations
+        fetch('/api/ai/recommend/')
+            .then(response => response.json())
+            .then(data => {
+                const panel = document.getElementById('aiPanel');
+                if (data.recommendations && data.recommendations.length > 0) {
+                    panel.innerHTML = `
+                        <h5 class="fw-bold m-0 text-dark mb-2"><i class="bi bi-stars" style="color: #f97316;"></i> Rekomendasi Spesial Hari Ini</h5>
+                        <p class="text-dark fs-5 fw-medium mb-3">"${data.ai_message}"</p>
+                        <div class="d-flex gap-3 overflow-auto pb-2" style="scrollbar-width: none;">
+                            ${data.recommendations.map(item => `
+                                <div class="card border border-2 border-dark bg-white" style="min-width: 250px; box-shadow: 2px 2px 0px #1e293b; border-radius: 12px;">
+                                    <div class="card-body p-3 d-flex gap-3 align-items-center">
+                                        <div class="rounded p-2 border border-dark" style="background-color: #FFF9F0;">
+                                            <i class="bi bi-cup-hot fs-3" style="color: #f97316;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark">${item.name}</h6>
+                                            <p class="mb-0 small text-muted fw-bold">Rp ${item.price}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    panel.innerHTML = `
+                        <h5 class="fw-bold m-0 text-dark mb-2"><i class="bi bi-stars" style="color: #f97316;"></i> Rekomendasi Spesial Hari Ini</h5>
+                        <p class="text-muted mb-0">Mulai pesan makanan untuk mendapatkan rekomendasi menu yang paling pas buat kamu!</p>
+                    `;
+                }
+            })
+            .catch(error => {
+                const panel = document.getElementById('aiPanel');
+                panel.innerHTML = `
+                    <h5 class="fw-bold m-0 text-dark mb-2"><i class="bi bi-stars" style="color: #f97316;"></i> Rekomendasi Spesial Hari Ini</h5>
+                    <p class="text-danger mb-0">Gagal memuat rekomendasi. Silakan muat ulang halaman.</p>
+                `;
+            });
+    });
+</script>
+{% endblock %}

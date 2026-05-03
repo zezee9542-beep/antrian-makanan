@@ -1,0 +1,1059 @@
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
+
+{% block title %}Keranjang - Kantin Smart{% endblock %}
+{% block nav_cart %}active{% endblock %}
+{% block header_title %}Keranjang Belanja{% endblock %}
+{% block header_subtitle %}Selesaikan pesananmu{% endblock %}
+
+{% block content %}
+<style>
+    /* Header Card with Wave */
+    .cart-header-premium {
+        background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+        border-radius: 16px 16px 0 0;
+        padding: 2.5rem 2rem 4rem 2rem;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: -2rem; /* Overlap with main card */
+    }
+    .cart-header-premium::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 40px;
+        background: white;
+        clip-path: ellipse(60% 100% at 50% 100%);
+    }
+    .header-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .header-icon-circle {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .header-text h1 {
+        color: white;
+        font-weight: 800;
+        font-size: 2.2rem;
+        margin: 0;
+    }
+    .header-text p {
+        color: rgba(255, 255, 255, 0.9);
+        margin: 5px 0 15px 0;
+        font-size: 1.1rem;
+    }
+    .header-badges {
+        display: flex;
+        gap: 1rem;
+    }
+    .header-badge {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+        backdrop-filter: blur(5px);
+    }
+    .header-badge i { font-size: 1.2rem; }
+    .badge-info h6 { margin: 0; font-weight: 700; font-size: 0.85rem; }
+    .badge-info p { margin: 0; font-size: 0.75rem; opacity: 0.8; }
+
+    .cart-main-card {
+        background: white;
+        border-radius: 0 0 16px 16px;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .cart-main-wrapper {
+        background: transparent;
+        padding: 0;
+        margin-bottom: 0;
+    }
+    
+    .breadcrumb-custom {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .breadcrumb-custom a {
+        color: #64748b;
+        text-decoration: none;
+    }
+    .breadcrumb-custom a:hover {
+        color: #f97316;
+    }
+    .back-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid #e2e8f0;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0f172a;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .back-btn:hover {
+        background: #f8fafc;
+        color: #f97316;
+    }
+
+    /* Top Notification Banner */
+    .top-notification {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .top-notification .notif-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.95rem;
+    }
+    .top-notification .notif-left i {
+        color: #f97316;
+        font-size: 1.2rem;
+    }
+    .top-notification .notif-right {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    .top-notification .notif-right span {
+        color: #f97316;
+        font-weight: 700;
+    }
+
+    /* Cart Item Card */
+    .cart-item-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        position: relative;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+    }
+    .cart-item-card.removing {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    .item-body {
+        display: flex;
+        gap: 1.5rem;
+    }
+    .item-img {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        object-fit: cover;
+    }
+    .item-details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.25rem;
+    }
+    .item-title {
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: #0f172a;
+        margin: 0;
+    }
+    .delete-btn {
+        background: transparent;
+        border: none;
+        color: #ef4444;
+        font-size: 1.2rem;
+        padding: 0;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .delete-btn:hover {
+        color: #b91c1c;
+    }
+    .item-modifiers {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    .item-price {
+        font-weight: 700;
+        color: #f97316;
+        font-size: 1.1rem;
+        margin-bottom: auto; /* Pushes controls to bottom */
+    }
+    .item-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    .qty-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 50px;
+        padding: 0.3rem 0.5rem;
+    }
+    .qty-btn {
+        background: white;
+        border: none;
+        color: #f97316;
+        font-weight: 800;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    .qty-btn:hover {
+        background: #fff7ed;
+    }
+    .qty-input {
+        width: 30px;
+        text-align: center;
+        border: none;
+        font-weight: 800;
+        font-size: 1rem;
+        color: #0f172a;
+        background: transparent;
+    }
+    .qty-input:focus {
+        outline: none;
+    }
+    .item-subtotal {
+        font-weight: 800;
+        color: #f97316;
+        font-size: 1.15rem;
+    }
+    
+    .item-note {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #e2e8f0;
+        color: #64748b;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .item-note i {
+        color: #f97316;
+    }
+
+    /* Voucher Card */
+    .voucher-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+    .voucher-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .voucher-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: #fff7ed;
+        color: #f97316;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    .voucher-text h6 {
+        margin: 0 0 0.2rem 0;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .voucher-text p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+    .voucher-btn {
+        color: #f97316;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+    .voucher-btn:hover {
+        color: #ea580c;
+    }
+
+    /* Recommendations */
+    .rec-section h4 {
+        font-weight: 800;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #0f172a;
+    }
+    .rec-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+    .rec-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .rec-card img {
+        width: 100%;
+        aspect-ratio: 4/3;
+        object-fit: cover;
+    }
+    .rec-body {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+    .rec-body h6 {
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin: 0 0 0.25rem 0;
+        color: #0f172a;
+    }
+    .rec-body p {
+        color: #f97316;
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin: 0 0 1rem 0;
+    }
+    .rec-add-btn {
+        background: white;
+        border: 1px solid #f97316;
+        color: #f97316;
+        border-radius: 50px;
+        padding: 0.4rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-align: center;
+        width: 100%;
+        margin-top: auto;
+        transition: all 0.2s;
+    }
+    .rec-add-btn:hover {
+        background: #f97316;
+        color: white;
+    }
+
+    /* Right Sidebar (Summary) */
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+    .summary-title {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: #0f172a;
+        margin-bottom: 1.5rem;
+    }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        color: #475569;
+    }
+    .summary-row.total-row {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px dashed #e2e8f0;
+        align-items: center;
+    }
+    .summary-row.total-row .total-label {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: #0f172a;
+    }
+    .summary-row.total-row .total-value {
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: #f97316;
+    }
+    .estimasi-box {
+        background: #fff7ed;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    .estimasi-box .est-title {
+        color: #f97316;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .estimasi-box .est-time {
+        font-weight: 800;
+        color: #f97316;
+        font-size: 1.2rem;
+        margin-bottom: 0.25rem;
+    }
+    .estimasi-box .est-desc {
+        color: #64748b;
+        font-size: 0.8rem;
+        margin: 0;
+    }
+    .btn-checkout {
+        background: #f97316;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1rem;
+        width: 100%;
+        font-weight: 800;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        transition: background 0.2s;
+    }
+    .btn-checkout:hover {
+        background: #ea580c;
+        color: white;
+    }
+    .btn-continue {
+        background: white;
+        color: #f97316;
+        border: 1px solid #f97316;
+        border-radius: 12px;
+        padding: 1rem;
+        width: 100%;
+        font-weight: 700;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+    .btn-continue:hover {
+        background: #fff7ed;
+        color: #f97316;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.5rem;
+    }
+    .info-card h5 {
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin-bottom: 1.25rem;
+        color: #0f172a;
+    }
+    .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .info-icon-wrapper {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fff7ed;
+        color: #f97316;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .info-text h6 {
+        margin: 0 0 0.2rem 0;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #1e293b;
+    }
+    .info-text p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    /* Promo Section Styling */
+    .promo-section-container {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .promo-main-card {
+        flex: 2;
+        background: #fffaf5;
+        border: 1px solid #ffedd5;
+        border-radius: 20px;
+        padding: 1.5rem;
+    }
+    .promo-main-card h5 {
+        font-weight: 800;
+        color: #f97316;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .promo-items-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+    .promo-mini-card {
+        background: white;
+        border: 1px solid #ffedd5;
+        border-radius: 15px;
+        padding: 1rem;
+        position: relative;
+    }
+    .promo-mini-card .top {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .mini-icon {
+        width: 35px;
+        height: 35px;
+        background: #fff7ed;
+        color: #f97316;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mini-info h6 { margin: 0; font-weight: 700; font-size: 0.85rem; }
+    .mini-info p { margin: 0; font-size: 0.7rem; color: #64748b; }
+    
+    .progress-bar-custom {
+        height: 6px;
+        background: #f1f5f9;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+    .progress-fill {
+        height: 100%;
+        background: #f97316;
+    }
+    .promo-footer-text {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-align: center;
+        color: #64748b;
+    }
+    .promo-footer-text span { color: #f97316; }
+
+    .help-card {
+        flex: 1;
+        background: #fffaf5;
+        border: 1px solid #ffedd5;
+        border-radius: 20px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+    .help-card h5 { font-weight: 800; margin-bottom: 0.5rem; }
+    .help-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; }
+    .btn-chat {
+        background: white;
+        border: 1px solid #f97316;
+        color: #f97316;
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: fit-content;
+        z-index: 2;
+    }
+    .help-illustration {
+        position: absolute;
+        bottom: 0;
+        right: -10px;
+        width: 100px;
+        z-index: 1;
+    }
+
+    .trust-footer {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        margin-top: 2rem;
+        padding: 1.5rem;
+    }
+    .trust-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .trust-icon { color: #f97316; font-size: 1.5rem; }
+    .trust-info h6 { margin: 0; font-weight: 700; font-size: 0.9rem; }
+    .trust-info p { margin: 0; font-size: 0.75rem; color: #64748b; }
+    
+    .empty-cart {
+        text-align: center;
+        padding: 3rem;
+    }
+    .empty-cart i {
+        font-size: 4rem;
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+        display: block;
+    }
+</style>
+
+<div class="container-fluid cart-main-wrapper p-0">
+    <!-- Premium Header Section (Outside Main Card) -->
+    <div class="cart-header-premium">
+        <div class="header-content">
+            <div class="header-icon-circle">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <div class="header-text">
+                <h1>Keranjang Belanja</h1>
+                <p>Yuk checkout sebelum kehabisan! 😊</p>
+                <div class="header-badges">
+                    {% if cart.canteen %}
+                    <div class="header-badge">
+                        <i class="bi bi-shop"></i>
+                        <div class="badge-info">
+                            <h6>Kantin saat ini</h6>
+                            <p>{{ cart.canteen.name }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="header-badge">
+                        <i class="bi bi-clock"></i>
+                        <div class="badge-info">
+                            <h6>Estimasi waktu siap</h6>
+                            <p>10 - 15 menit</p>
+                        </div>
+                    </div>
+                    <div class="header-badge">
+                        <i class="bi bi-shield-check"></i>
+                        <div class="badge-info">
+                            <h6>Pesanan aman</h6>
+                            <p>Data kamu terlindungi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-main-card">
+        <div class="breadcrumb-custom">
+        <a href="{% url 'student_menu' %}" class="back-btn"><i class="bi bi-arrow-left"></i></a>
+        <span style="font-weight: 600; color: #0f172a;">Keranjang Belanja</span>
+    </div>
+
+    <div class="row g-4">
+        <!-- LEFT COLUMN: Cart Items -->
+        <div class="col-xl-7 col-lg-7">
+            
+            {% if cart.cart_items.all %}
+            <div class="top-notification">
+                <div class="notif-left">
+                    <i class="bi bi-clock"></i>
+                    Pesananmu akan diproses setelah checkout
+                </div>
+                <div class="notif-right">
+                    Di kantin: <span>{{ cart.canteen.name }}</span>
+                </div>
+            </div>
+
+            <!-- Cart Items Container -->
+            <div id="cartItemsContainer">
+                {% for item in cart.cart_items.all %}
+                <div class="cart-item-card" data-price="{{ item.menu_item.price }}" id="itemRow-{{ item.id }}">
+                    <div class="item-body">
+                        {% if item.menu_item.image %}
+                        <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="item-img">
+                        {% else %}
+                        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80" alt="{{ item.menu_item.name }}" class="item-img">
+                        {% endif %}
+                        <div class="item-details">
+                            <div class="item-header">
+                                <h4 class="item-title">{{ item.menu_item.name }}</h4>
+                                <a href="{% url 'remove_from_cart' item.id %}" class="delete-btn"><i class="bi bi-trash"></i></a>
+                            </div>
+                            <div class="item-modifiers"></div>
+                            <div class="item-price">Rp {{ item.menu_item.price }}</div>
+                            <div class="item-controls">
+                                <div class="qty-wrapper">
+                                    <button class="qty-btn" onclick="updateQty({{ item.id }}, -1)"><i class="bi bi-dash"></i></button>
+                                    <input type="text" class="qty-input" value="{{ item.quantity }}" id="qty-{{ item.id }}" readonly>
+                                    <button class="qty-btn" onclick="updateQty({{ item.id }}, 1)"><i class="bi bi-plus"></i></button>
+                                </div>
+                                <div class="item-subtotal js-item-subtotal" id="subtotal-{{ item.id }}">Rp {{ item.subtotal }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div id="emptyCartMessage" class="empty-cart">
+                <i class="bi bi-cart-x"></i>
+                <h4>Keranjangmu masih kosong</h4>
+                <p class="text-muted">Yuk, cari makanan enak di kantin!</p>
+                <a href="{% url 'student_menu' %}" class="btn btn-outline-warning mt-2">Mulai Belanja</a>
+            </div>
+            {% endif %}
+
+            <!-- Voucher Section -->
+            <div class="voucher-card" id="voucherSection" {% if not cart.cart_items.all %}style="display:none;"{% endif %}>
+                <div class="voucher-left">
+                    <div class="voucher-icon"><i class="bi bi-ticket-perforated"></i></div>
+                    <div class="voucher-text">
+                        <h6>Punya kode voucher?</h6>
+                        <p>Gunakan voucher untuk dapatkan potongan harga</p>
+                    </div>
+                </div>
+                <a href="#" class="voucher-btn">Gunakan <i class="bi bi-chevron-right"></i></a>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="rec-section" id="recSection" {% if not cart.cart_items.all %}style="display:none;"{% endif %}>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">Kamu mungkin juga suka</h4>
+                    <a href="{% url 'student_menu' %}" style="color: #f97316; font-weight: 600; text-decoration: none; font-size: 0.9rem;">Lihat semua <i class="bi bi-chevron-right"></i></a>
+                </div>
+                <div class="rec-grid">
+                    <div class="rec-card">
+                        <img src="https://images.unsplash.com/photo-1576107232684-1279f390859f?auto=format&fit=crop&w=200&q=80" alt="Kentang Goreng">
+                        <div class="rec-body">
+                            <h6>Kentang Goreng</h6>
+                            <p>Rp 8.000</p>
+                            <button class="rec-add-btn">+ Tambah</button>
+                        </div>
+                    </div>
+                    <div class="rec-card">
+                        <img src="https://images.unsplash.com/photo-1608500218890-a544b6c31bf0?auto=format&fit=crop&w=200&q=80" alt="Sosis Bakar">
+                        <div class="rec-body">
+                            <h6>Sosis Bakar</h6>
+                            <p>Rp 7.000</p>
+                            <button class="rec-add-btn">+ Tambah</button>
+                        </div>
+                    </div>
+                    <div class="rec-card">
+                        <img src="https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=200&q=80" alt="Jus Jeruk">
+                        <div class="rec-body">
+                            <h6>Jus Jeruk</h6>
+                            <p>Rp 10.000</p>
+                            <button class="rec-add-btn">+ Tambah</button>
+                        </div>
+                    </div>
+                    <div class="rec-card">
+                        <img src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=200&q=80" alt="Sup Ayam">
+                        <div class="rec-body">
+                            <h6>Sup Ayam</h6>
+                            <p>Rp 10.000</p>
+                            <button class="rec-add-btn">+ Tambah</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promo & Help Section -->
+            <div class="promo-section-container" id="promoContainer" {% if not cart.cart_items.all %}style="display:none;"{% endif %}>
+                <div class="promo-main-card">
+                    <h5>Promo spesial untukmu! 🔥</h5>
+                    <div class="promo-items-grid">
+                        <div class="promo-mini-card">
+                            <div class="top">
+                                <div class="mini-icon"><i class="bi bi-truck"></i></div>
+                                <div class="mini-info">
+                                    <h6>Gratis Ongkir</h6>
+                                    <p>Min. belanja Rp 40.000</p>
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80%;"></div>
+                            </div>
+                            <p class="promo-footer-text">Belanja lagi <span>Rp 6.000</span></p>
+                        </div>
+                        <div class="promo-mini-card">
+                            <div class="top">
+                                <div class="mini-icon"><i class="bi bi-percent"></i></div>
+                                <div class="mini-info">
+                                    <h6>Diskon 10%</h6>
+                                    <p>Min. belanja Rp 50.000</p>
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 60%;"></div>
+                            </div>
+                            <p class="promo-footer-text">Belanja lagi <span>Rp 16.000</span></p>
+                        </div>
+                        <div class="promo-mini-card">
+                            <div class="top">
+                                <div class="mini-icon"><i class="bi bi-gift"></i></div>
+                                <div class="mini-info">
+                                    <h6>Beli 3 Gratis 1</h6>
+                                    <p>Min. 4 item makanan</p>
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 75%;"></div>
+                            </div>
+                            <p class="promo-footer-text">Tambah <span>1 item lagi</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="help-card">
+                    <div>
+                        <h5>Butuh bantuan?</h5>
+                        <p>Hubungi kami jika ada kendala</p>
+                        <button class="btn-chat">
+                            <i class="bi bi-chat-dots"></i> Chat Admin
+                        </button>
+                    </div>
+                    <img src="https://cdn-icons-png.flaticon.com/512/4140/4140037.png" alt="Help" class="help-illustration">
+                </div>
+            </div>
+
+            <!-- Trust Footer -->
+            <div class="trust-footer">
+                <div class="trust-item">
+                    <div class="trust-icon"><i class="bi bi-leaf"></i></div>
+                    <div class="trust-info">
+                        <h6>Bahan Segar</h6>
+                        <p>Setiap hari</p>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon"><i class="bi bi-stars"></i></div>
+                    <div class="trust-info">
+                        <h6>Higienis</h6>
+                        <p>Terjaga kebersihannya</p>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon"><i class="bi bi-lightning-charge"></i></div>
+                    <div class="trust-info">
+                        <h6>Cepat & Praktis</h6>
+                        <p>Tanpa perlu antre lama</p>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon"><i class="bi bi-hand-thumbs-up"></i></div>
+                    <div class="trust-info">
+                        <h6>Terpercaya</h6>
+                        <p>1000+ siswa puas</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Summary -->
+        <div class="col-xl-5 col-lg-5">
+            <div class="summary-card">
+                    <h3 class="summary-title">Ringkasan Pesanan</h3>
+                    
+                    <div class="summary-row">
+                        <span id="summaryItemCount">Total Item</span>
+                        <span id="summaryItems">{{ cart.total_items|default:0 }}</span>
+                    </div>
+                    
+                    <div class="summary-row total-row">
+                        <span class="total-label">Total Harga</span>
+                        <span class="total-value" id="summaryTotalValue">Rp {{ cart.total_price|default:0 }}</span>
+                    </div>
+                    
+                    <div class="estimasi-box mt-4">
+                        <div class="est-title"><i class="bi bi-clock"></i> Estimasi waktu siap</div>
+                        <div class="est-time">10 - 15 menit</div>
+                        <p class="est-desc">Setelah pesanan dikonfirmasi kantin</p>
+                    </div>
+                    
+                    {% if cart.cart_items.all %}
+                    <form action="{% url 'checkout' %}" method="POST" id="checkoutForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" style="font-size: 0.9rem; color: #475569; font-weight: 600;">Catatan (Opsional)</label>
+                            <textarea name="notes" class="form-control" rows="2" placeholder="Contoh: Jangan pakai sayur, pedas sedang..." style="border-radius: 12px; border-color: #e2e8f0;"></textarea>
+                        </div>
+                        <button type="submit" class="btn-checkout" id="btnCheckout" onclick="handleCheckout(event)">
+                            <i class="bi bi-bag"></i> Checkout Sekarang
+                        </button>
+                    </form>
+                    {% else %}
+                    <button class="btn-checkout" id="btnCheckout" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        <i class="bi bi-bag"></i> Checkout Sekarang
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'student_menu' %}" class="btn-continue mt-2">
+                        <i class="bi bi-arrow-left"></i> Lanjut Belanja
+                    </a>
+                </div>
+
+                <div class="info-card">
+                    <h5>Informasi Penting</h5>
+                    <div class="info-list">
+                        <div class="info-item">
+                            <div class="info-icon-wrapper"><i class="bi bi-shield-check"></i></div>
+                            <div class="info-text">
+                                <h6>Pesanan aman</h6>
+                                <p>Data kamu terlindungi</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon-wrapper"><i class="bi bi-clock-history"></i></div>
+                            <div class="info-text">
+                                <h6>Pesanan diproses cepat</h6>
+                                <p>Langsung masuk ke antrian</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon-wrapper"><i class="bi bi-arrow-repeat"></i></div>
+                            <div class="info-text">
+                                <h6>Bisa dibatalkan</h6>
+                                <p>Selama belum diproses</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Logic -->
+<script>
+    function formatRupiah(number) {
+        return 'Rp ' + new Intl.NumberFormat('id-ID').format(number);
+    }
+
+    function updateQty(itemId, change) {
+        const input = document.getElementById(`qty-${itemId}`);
+        let newQty = parseInt(input.value) + change;
+        if (newQty < 0) return;
+        
+        const formData = new FormData();
+        formData.append('quantity', newQty);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(`/cart/update/${itemId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                if (newQty === 0) {
+                    window.location.reload(); // reload if item is deleted
+                } else {
+                    input.value = newQty;
+                    // Update item subtotal
+                    const price = parseInt(document.getElementById(`itemRow-${itemId}`).getAttribute('data-price'));
+                    document.getElementById(`subtotal-${itemId}`).innerText = formatRupiah(price * newQty);
+                    
+                    // Update global summary
+                    document.getElementById('summaryItems').textContent = data.total_items;
+                    document.getElementById('summaryTotalValue').textContent = formatRupiah(data.total_price);
+                }
+            }
+        });
+    }
+
+    function handleCheckout(event) {
+        const btn = document.getElementById('btnCheckout');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
+        btn.style.opacity = '0.7';
+        // Biarkan form melakukan submit aslinya, sehingga akan diarahkan ke django view `checkout`
+    }
+</script>
+{% endblock %}

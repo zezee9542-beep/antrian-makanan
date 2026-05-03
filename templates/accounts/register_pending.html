@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menunggu Konfirmasi - Smart Food Queue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background-color: #a0d8cc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .pending-card {
+            background: white;
+            border-radius: 24px;
+            padding: 4rem 3rem;
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon-wrapper {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #E6F4F1, #CFEDEA);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem auto;
+            animation: pulse 2.5s infinite;
+        }
+
+        .icon-wrapper i {
+            font-size: 2.8rem;
+            color: #2F9E8F;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(47, 158, 143, 0.3); }
+            50% { box-shadow: 0 0 0 18px rgba(47, 158, 143, 0); }
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #111827;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.05rem;
+            color: #64748b;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+        .info-box .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 1.2rem;
+        }
+        .info-box .step:last-child { margin-bottom: 0; }
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #6eb5a8;
+            color: white;
+            font-weight: 800;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .step-text {
+            color: #374151;
+            font-size: 0.95rem;
+            padding-top: 5px;
+            line-height: 1.5;
+        }
+
+        .btn-back {
+            background: #6eb5a8;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0.85rem 2.5rem;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(110, 181, 168, 0.3);
+        }
+        .btn-back:hover {
+            background: #4a8b7f;
+            color: white;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="pending-card">
+        <div class="icon-wrapper">
+            <i class="bi bi-hourglass-split"></i>
+        </div>
+        <h1>Pendaftaran Berhasil!</h1>
+        <p class="subtitle">
+            Akun kamu telah berhasil dibuat dan sedang <strong>menunggu konfirmasi dari admin</strong>. Kamu belum bisa login sampai akun dikonfirmasi.
+        </p>
+
+        <div class="info-box">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">Akun kamu sudah terdaftar di sistem kami.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">Admin akan meninjau dan mengkonfirmasi pendaftaran kamu dalam waktu dekat.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">Setelah dikonfirmasi, kamu bisa login dengan username dan password yang sudah dibuat.</div>
+            </div>
+        </div>
+
+        <a href="{% url 'login' %}" class="btn-back">
+            <i class="bi bi-arrow-left me-2"></i>Kembali ke Login
+        </a>
+    </div>
+</body>
+</html>

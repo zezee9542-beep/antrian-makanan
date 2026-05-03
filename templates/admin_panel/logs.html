@@ -1,0 +1,424 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}Log Aktivitas - Smart Food Queue{% endblock %}
+{% block nav_logs %}active{% endblock %}
+{% block header_title %}Log Aktivitas{% endblock %}
+{% block header_subtitle %}Riwayat aktivitas semua pengguna dalam sistem{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Cards Configuration */
+    .card-monitor {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        border: 1px solid var(--border-color);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+    }
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .summary-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .summary-value { font-size: 1.8rem; font-weight: 900; line-height: 1; margin-bottom: 0.4rem; }
+    .summary-trend { font-size: 0.8rem; font-weight: 700; }
+    .relative-z { position: relative; z-index: 2; pointer-events: none; }
+
+    /* Card Themes */
+    .card-blue { background-color: #E2F0FE; border-color: #E2F0FE; }
+    .card-blue .summary-icon { color: #3b82f6; background-color: white !important; }
+    .card-blue .summary-value, .card-blue .summary-trend { color: #1e3a8a; }
+    .card-blue .summary-title { color: #60a5fa; }
+
+    .card-green { background-color: #E0F5E6; border-color: #E0F5E6; }
+    .card-green .summary-icon { color: #10b981; background-color: white !important; }
+    .card-green .summary-value, .card-green .summary-trend { color: #064e3b; }
+    .card-green .summary-title { color: #34d399; }
+
+    .card-orange { background-color: #FFF3DF; border-color: #FFF3DF; }
+    .card-orange .summary-icon { color: #f59e0b; background-color: white !important; }
+    .card-orange .summary-value, .card-orange .summary-trend { color: #78350f; }
+    .card-orange .summary-title { color: #fbbf24; }
+
+    .card-purple { background-color: #F3E8FF; border-color: #F3E8FF; }
+    .card-purple .summary-icon { color: #8b5cf6; background-color: white !important; }
+    .card-purple .summary-value, .card-purple .summary-trend { color: #4c1d95; }
+    .card-purple .summary-title { color: #c084fc; }
+
+    .card-red { background-color: #FEE2E2; border-color: #FEE2E2; }
+    .card-red .summary-icon { color: #ef4444; background-color: white !important; }
+    .card-red .summary-value, .card-red .summary-trend { color: #7f1d1d; }
+    .card-red .summary-title { color: #f87171; }
+
+    /* Filter Section */
+    .filter-section {
+        background: white; border-radius: 16px; padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+    }
+    .filter-label { font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem; display: block; }
+    .filter-input {
+        background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+        padding: 0.6rem 1rem; font-size: 0.9rem; font-weight: 600; color: #334155; width: 100%;
+    }
+    .filter-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    
+    /* Table Section */
+    .table-wrapper {
+        background: white; border-radius: 16px; padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid var(--border-color);
+    }
+    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .table-title { font-size: 1.1rem; font-weight: 800; color: var(--text-dark); margin: 0; }
+    
+    .table-custom { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .table-custom th { font-size: 0.85rem; font-weight: 700; color: #64748b; padding: 1rem 0.5rem; border-bottom: 1px solid #e2e8f0; white-space: nowrap; text-align: center; }
+    .table-custom td { padding: 1rem 0.5rem; font-size: 0.92rem; font-weight: 600; color: #334155; border-bottom: 1px solid #f1f5f9; vertical-align: middle; text-align: center; word-wrap: break-word; }
+    
+    /* Make No column smaller, Detail slightly larger */
+    .table-custom th:nth-child(1) { width: 5%; }
+    .table-custom th:nth-child(2) { width: 15%; }
+    .table-custom th:nth-child(3) { width: 15%; }
+    .table-custom th:nth-child(4) { width: 10%; }
+    .table-custom th:nth-child(5) { width: 15%; }
+    .table-custom th:nth-child(6) { width: 25%; }
+    .table-custom th:nth-child(7) { width: 15%; }
+    
+    /* Avatars and Badges */
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+    .role-badge { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 800; }
+    .role-siswa { background-color: #dcfce7; color: #16a34a; }
+    .role-penjual { background-color: #ffedd5; color: #ea580c; }
+    .role-admin { background-color: #f3e8ff; color: #9333ea; }
+
+    /* Action Icons */
+    .act-icon { margin-right: 8px; font-size: 1.1rem; }
+    .act-login { color: #10b981; }
+    .act-create { color: #3b82f6; }
+    .act-update { color: #8b5cf6; }
+    .act-delete { color: #ef4444; }
+    .act-scan { color: #f59e0b; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- ROW 1: 5 SUMMARY CARDS -->
+<div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+    <!-- Card 1 -->
+    <div class="col">
+        <div class="card-monitor card-blue">
+            <div class="d-flex align-items-center mb-1 relative-z">
+                <div class="summary-icon"><i class="bi bi-file-earmark-text"></i></div>
+                <div class="summary-value ms-3">156</div>
+            </div>
+            <div class="summary-title relative-z mt-2">Total Aktivitas</div>
+            <div class="summary-trend relative-z" style="color: #10b981;"><i class="bi bi-caret-up-fill"></i> 12.5% <span style="opacity: 0.7; font-weight: normal; color: #64748b;">dari periode lalu</span></div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 65%; height: 50%;">
+                <canvas id="miniChart1"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Card 2 -->
+    <div class="col">
+        <div class="card-monitor card-green">
+            <div class="d-flex align-items-center mb-1 relative-z">
+                <div class="summary-icon"><i class="bi bi-person"></i></div>
+                <div class="summary-value ms-3">45</div>
+            </div>
+            <div class="summary-title relative-z mt-2">Login</div>
+            <div class="summary-trend relative-z" style="color: #10b981;"><i class="bi bi-caret-up-fill"></i> 8.2% <span style="opacity: 0.7; font-weight: normal; color: #64748b;">dari periode lalu</span></div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 65%; height: 50%;">
+                <canvas id="miniChart2"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Card 3 -->
+    <div class="col">
+        <div class="card-monitor card-orange">
+            <div class="d-flex align-items-center mb-1 relative-z">
+                <div class="summary-icon"><i class="bi bi-cart3"></i></div>
+                <div class="summary-value ms-3">38</div>
+            </div>
+            <div class="summary-title relative-z mt-2">Pesanan Dibuat</div>
+            <div class="summary-trend relative-z" style="color: #10b981;"><i class="bi bi-caret-up-fill"></i> 15.7% <span style="opacity: 0.7; font-weight: normal; color: #64748b;">dari periode lalu</span></div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 65%; height: 50%;">
+                <canvas id="miniChart3"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Card 4 -->
+    <div class="col">
+        <div class="card-monitor card-purple">
+            <div class="d-flex align-items-center mb-1 relative-z">
+                <div class="summary-icon"><i class="bi bi-pencil-square"></i></div>
+                <div class="summary-value ms-3">52</div>
+            </div>
+            <div class="summary-title relative-z mt-2">Update Data</div>
+            <div class="summary-trend relative-z" style="color: #10b981;"><i class="bi bi-caret-up-fill"></i> 6.3% <span style="opacity: 0.7; font-weight: normal; color: #64748b;">dari periode lalu</span></div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 65%; height: 50%;">
+                <canvas id="miniChart4"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Card 5 -->
+    <div class="col">
+        <div class="card-monitor card-red">
+            <div class="d-flex align-items-center mb-1 relative-z">
+                <div class="summary-icon"><i class="bi bi-trash"></i></div>
+                <div class="summary-value ms-3">7</div>
+            </div>
+            <div class="summary-title relative-z mt-2">Penghapusan</div>
+            <div class="summary-trend relative-z" style="color: #ef4444;"><i class="bi bi-caret-down-fill"></i> 12.1% <span style="opacity: 0.7; font-weight: normal; color: #64748b;">dari periode lalu</span></div>
+            <div style="position: absolute; bottom: -5px; right: -5px; width: 65%; height: 50%;">
+                <canvas id="miniChart5"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ROW 2: FILTER SECTION -->
+<div class="filter-section d-flex justify-content-between align-items-center">
+    <div class="position-relative" style="width: 100%; max-width: 400px;">
+        <input type="text" class="filter-input" placeholder="Cari aktivitas atau username..." style="padding-left: 2.8rem; border-radius: 50px;">
+        <i class="bi bi-search position-absolute" style="left: 1.2rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+    </div>
+    
+    <div class="d-flex gap-2">
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside" style="background-color: #3b82f6; border: none; border-radius: 8px; font-weight: 700; padding: 0.6rem 1.2rem;">
+                <i class="bi bi-funnel-fill me-1"></i> Filter
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-4 shadow-lg" aria-labelledby="filterDropdown" style="width: 320px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 10px;">
+                <h6 class="mb-3 fw-bold text-dark">Filter Pencarian</h6>
+                
+                <div class="mb-3">
+                    <label class="filter-label">Role</label>
+                    <select class="filter-input">
+                        <option>Semua Role</option>
+                        <option>Siswa</option>
+                        <option>Penjual</option>
+                        <option>Admin</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="filter-label">Jenis Aktivitas</label>
+                    <select class="filter-input">
+                        <option>Semua Aktivitas</option>
+                        <option>Login</option>
+                        <option>Membuat Pesanan</option>
+                        <option>Update Status</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="filter-label">Tanggal</label>
+                    <div class="position-relative">
+                        <input type="text" class="filter-input" value="17/05/2025 - 23/05/2025">
+                        <i class="bi bi-calendar3 position-absolute" style="right: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary w-100" style="background-color: #3b82f6; border: none; border-radius: 8px; font-weight: 700; padding: 0.6rem;">Terapkan Filter</button>
+            </div>
+        </div>
+        <button class="btn btn-light" style="border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 700; padding: 0.6rem 1.2rem; color: #475569;"><i class="bi bi-arrow-clockwise me-1"></i> Reset</button>
+    </div>
+</div>
+
+<!-- ROW 3: TABLE -->
+<div class="table-wrapper">
+    <div class="table-header">
+        <h3 class="table-title">Daftar Log Aktivitas</h3>
+        <button class="btn btn-light" style="border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 700; font-size: 0.85rem;"><i class="bi bi-download me-2"></i>Export</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">No</th>
+                    <th>Waktu</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Aktivitas</th>
+                    <th>Detail</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td class="text-muted">23 Mei 2025, 14:35:21</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Ahmad+Dwi&background=e2e8f0" class="user-avatar" alt="Avatar"> Ahmad Dwi</td>
+                    <td><span class="role-badge role-siswa">Siswa</span></td>
+                    <td><i class="bi bi-box-arrow-in-right act-icon act-login"></i> Login</td>
+                    <td>User berhasil login ke sistem</td>
+                    <td>192.168.1.10</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td class="text-muted">23 Mei 2025, 14:32:10</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Rina+Sari&background=e2e8f0" class="user-avatar" alt="Avatar"> Rina Sari</td>
+                    <td><span class="role-badge role-penjual">Penjual</span></td>
+                    <td><i class="bi bi-cart-plus act-icon act-create"></i> Membuat Pesanan</td>
+                    <td>Pesanan #ORD-230523-0098 dibuat</td>
+                    <td>192.168.1.15</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td class="text-muted">23 Mei 2025, 14:30:45</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Rina+Sari&background=e2e8f0" class="user-avatar" alt="Avatar"> Rina Sari</td>
+                    <td><span class="role-badge role-penjual">Penjual</span></td>
+                    <td><i class="bi bi-list-check act-icon act-update"></i> Update Status Pesanan</td>
+                    <td>Pesanan #ORD-230523-0098 status diubah menjadi <span class="badge bg-primary ms-1" style="font-size:0.7rem;">Diproses</span></td>
+                    <td>192.168.1.15</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td class="text-muted">23 Mei 2025, 14:28:11</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Budi+Santoso&background=e2e8f0" class="user-avatar" alt="Avatar"> Budi Santoso</td>
+                    <td><span class="role-badge role-penjual">Penjual</span></td>
+                    <td><i class="bi bi-plus-circle act-icon act-login"></i> Tambah Menu</td>
+                    <td>Menu "Mie Ayam Spesial" ditambahkan</td>
+                    <td>192.168.1.16</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td class="text-muted">23 Mei 2025, 14:20:33</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Ahmad+Dwi&background=e2e8f0" class="user-avatar" alt="Avatar"> Ahmad Dwi</td>
+                    <td><span class="role-badge role-siswa">Siswa</span></td>
+                    <td><i class="bi bi-qr-code act-icon act-scan"></i> Scan QR Code</td>
+                    <td>Scan QR Kantin "Kantin Utama"</td>
+                    <td>192.168.1.10</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td class="text-muted">23 Mei 2025, 14:18:02</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Siti+Nurhaliza&background=e2e8f0" class="user-avatar" alt="Avatar"> Siti Nurhaliza</td>
+                    <td><span class="role-badge role-siswa">Siswa</span></td>
+                    <td><i class="bi bi-cart-plus act-icon act-create"></i> Membuat Pesanan</td>
+                    <td>Pesanan #ORD-230523-0097 dibuat</td>
+                    <td>192.168.1.12</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td class="text-muted">23 Mei 2025, 14:10:55</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Budi+Santoso&background=e2e8f0" class="user-avatar" alt="Avatar"> Budi Santoso</td>
+                    <td><span class="role-badge role-penjual">Penjual</span></td>
+                    <td><i class="bi bi-list-check act-icon act-update"></i> Update Status Pesanan</td>
+                    <td>Pesanan #ORD-230523-0096 status diubah menjadi <span class="badge bg-success ms-1" style="font-size:0.7rem;">Selesai</span></td>
+                    <td>192.168.1.16</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td class="text-muted">23 Mei 2025, 14:05:29</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Admin+Sistem&background=e2e8f0" class="user-avatar" alt="Avatar"> Admin Sistem</td>
+                    <td><span class="role-badge role-admin">Admin</span></td>
+                    <td><i class="bi bi-person-gear act-icon act-create"></i> Update User</td>
+                    <td>User "Rina Sari" status diubah menjadi <span class="badge bg-success ms-1" style="font-size:0.7rem;">Aktif</span></td>
+                    <td>192.168.1.1</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td class="text-muted">23 Mei 2025, 13:58:47</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Ahmad+Dwi&background=e2e8f0" class="user-avatar" alt="Avatar"> Ahmad Dwi</td>
+                    <td><span class="role-badge role-siswa">Siswa</span></td>
+                    <td><i class="bi bi-wallet2 act-icon act-scan"></i> Pembayaran</td>
+                    <td>Pembayaran pesanan #ORD-230523-0095 berhasil</td>
+                    <td>192.168.1.10</td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td class="text-muted">23 Mei 2025, 13:45:12</td>
+                    <td><img src="https://ui-avatars.com/api/?name=Admin+Sistem&background=e2e8f0" class="user-avatar" alt="Avatar"> Admin Sistem</td>
+                    <td><span class="role-badge role-admin">Admin</span></td>
+                    <td><i class="bi bi-trash act-icon act-delete"></i> Hapus Menu</td>
+                    <td>Menu "Es Jeruk" dihapus</td>
+                    <td>192.168.1.1</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <div style="font-size: 0.9rem; font-weight: 600; color: #64748b;">Menampilkan 1 - 10 dari 156 aktivitas</div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-light" style="border: 1px solid #e2e8f0; font-weight: 700; font-size: 0.85rem;" disabled><i class="bi bi-chevron-left me-1"></i> Sebelumnya</button>
+            <button class="btn btn-primary" style="background-color: #3b82f6; border: none; font-weight: 700;">1</button>
+            <button class="btn btn-light" style="border: 1px solid #e2e8f0; font-weight: 700;">2</button>
+            <button class="btn btn-light" style="border: 1px solid #e2e8f0; font-weight: 700;">3</button>
+            <button class="btn btn-light" style="border: 1px solid #e2e8f0; font-weight: 700;">...</button>
+            <button class="btn btn-light" style="border: 1px solid #e2e8f0; font-weight: 700;">16</button>
+            <button class="btn btn-light" style="border: 1px solid #e2e8f0; font-weight: 700; font-size: 0.85rem;">Selanjutnya <i class="bi bi-chevron-right ms-1"></i></button>
+        </div>
+        <div>
+            <select class="filter-input" style="width: auto; padding-right: 2rem;">
+                <option>10 / halaman</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Chart.defaults.plugins.tooltip.enabled = true;
+        Chart.defaults.plugins.tooltip.intersect = false;
+        Chart.defaults.plugins.tooltip.mode = 'index';
+
+        const makeGradient = (ctx, colorStart, colorEnd) => {
+            const g = ctx.createLinearGradient(0, 0, 0, 300);
+            g.addColorStop(0, colorStart);
+            g.addColorStop(1, colorEnd);
+            return g;
+        };
+
+        const miniOpts = {
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { bottom: -10, left: -10, right: -10, top: 10 } },
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false, min: 0 } },
+            elements: { line: { tension: 0.4 } }
+        };
+
+        const miniLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+        const data1 = [10, 25, 20, 45, 30, 50, 40];
+        const data2 = [5, 10, 8, 15, 12, 20, 18];
+        const data3 = [15, 10, 25, 20, 30, 25, 35];
+        const data4 = [8, 12, 10, 18, 15, 25, 20];
+        const data5 = [5, 2, 4, 1, 3, 2, 1];
+
+        const ctx1 = document.getElementById('miniChart1').getContext('2d');
+        new Chart(ctx1, { type: 'line', data: { labels: miniLabels, datasets: [{ label: 'Aktivitas', data: data1, borderColor: '#3b82f6', backgroundColor: makeGradient(ctx1, 'rgba(59,130,246,0.3)', 'rgba(59,130,246,0.01)'), borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4 }]}, options: miniOpts });
+
+        const ctx2 = document.getElementById('miniChart2').getContext('2d');
+        new Chart(ctx2, { type: 'line', data: { labels: miniLabels, datasets: [{ label: 'Login', data: data2, borderColor: '#10b981', backgroundColor: makeGradient(ctx2, 'rgba(16,185,129,0.3)', 'rgba(16,185,129,0.01)'), borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4 }]}, options: miniOpts });
+
+        const ctx3 = document.getElementById('miniChart3').getContext('2d');
+        new Chart(ctx3, { type: 'line', data: { labels: miniLabels, datasets: [{ label: 'Pesanan', data: data3, borderColor: '#f59e0b', backgroundColor: makeGradient(ctx3, 'rgba(245,158,11,0.3)', 'rgba(245,158,11,0.01)'), borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4 }]}, options: miniOpts });
+
+        const ctx4 = document.getElementById('miniChart4').getContext('2d');
+        new Chart(ctx4, { type: 'line', data: { labels: miniLabels, datasets: [{ label: 'Update', data: data4, borderColor: '#8b5cf6', backgroundColor: makeGradient(ctx4, 'rgba(139,92,246,0.3)', 'rgba(139,92,246,0.01)'), borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4 }]}, options: miniOpts });
+
+        const ctx5 = document.getElementById('miniChart5').getContext('2d');
+        new Chart(ctx5, { type: 'line', data: { labels: miniLabels, datasets: [{ label: 'Hapus', data: data5, borderColor: '#ef4444', backgroundColor: makeGradient(ctx5, 'rgba(239,68,68,0.3)', 'rgba(239,68,68,0.01)'), borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4 }]}, options: miniOpts });
+    });
+</script>
+{% endblock %}

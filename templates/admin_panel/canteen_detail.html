@@ -1,0 +1,483 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}Detail Kantin: {{ canteen.name }} - Smart Food Queue{% endblock %}
+{% block nav_canteens %}active{% endblock %}
+{% block header_title %}Detail Kantin{% endblock %}
+{% block header_subtitle %}Informasi lengkap dan statistik kantin{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    /* ── 3 STAT CARDS ── */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        border-radius: 16px;
+        padding: 1.5rem;
+        position: relative;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        min-height: 160px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+    }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+
+    .icon-box {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: rgba(255,255,255,0.7);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 2; position: relative;
+    }
+    .stat-icon { font-size: 1.1rem; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; display: flex; align-items: baseline; gap: 4px; z-index: 2; position: relative; letter-spacing: -0.5px; }
+    .stat-unit  { font-size: 0.85rem; font-weight: 600; opacity: 0.9; letter-spacing: 0; }
+    .stat-title { font-size: 0.9rem; font-weight: 600; margin-top: 8px; z-index: 2; position: relative; opacity: 0.85; }
+    .chart-container-wave { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 55%; z-index: 1; }
+
+    /* Card colours */
+    .card-total   { background-color: #D4EEE9; }
+    .card-total   .stat-icon  { color: #1a7a6a; }
+    .card-total   .stat-value { color: #1a7a6a; }
+    .card-total   .stat-title { color: #5a9c8e; }
+
+    .card-aktif   { background-color: #E0F5E6; }
+    .card-aktif   .stat-icon  { color: #15A03A; }
+    .card-aktif   .stat-value { color: #15A03A; }
+    .card-aktif   .stat-title { color: #9FD0A7; }
+
+    .card-revenue { background-color: #FFF3DF; }
+    .card-revenue .stat-icon  { color: #EC8513; }
+    .card-revenue .stat-value { color: #EC8513; }
+    .card-revenue .stat-title { color: #D7B891; }
+
+    .card-rating  { background-color: #E5F0FB; }
+    .card-rating  .stat-icon  { color: #0E66C5; }
+    .card-rating  .stat-value { color: #0E66C5; }
+    .card-rating  .stat-title { color: #94BCE7; }
+
+    /* ── HEADER PROFILE ── */
+    .canteen-header {
+        background-color: white; color: var(--text-dark); padding: 2rem; border-radius: 16px;
+        display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border-color);
+        position: relative; overflow: hidden;
+    }
+    .canteen-header > * { position: relative; z-index: 1; }
+    .header-vector {
+        position: absolute; right: 0; bottom: 0; height: 100%;
+        opacity: 0.4; z-index: 0; pointer-events: none;
+        object-fit: contain;
+    }
+    .canteen-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #1f2937;
+        object-fit: cover;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .canteen-info h2 {
+        font-weight: 900;
+        color: var(--text-dark);
+        margin-bottom: 0.2rem;
+    }
+    
+    /* ── TABLE WRAPPERS ── */
+    .table-wrapper {
+        background: white; border-radius: 16px; padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border-color);
+        height: 100%;
+    }
+    .list-title { font-size: 1.15rem; font-weight: 900; color: var(--text-dark); letter-spacing: -0.3px; margin-bottom: 0; text-transform: uppercase;}
+
+    .table-custom { width: 100%; border-collapse: collapse; }
+    .table-custom th {
+        font-size: 0.85rem; font-weight: 800; color: #1f2937;
+        padding: 1rem 1.2rem; border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap; text-transform: uppercase;
+    }
+    .table-custom td {
+        padding: 1.2rem 1.2rem; font-size: 0.95rem; font-weight: 500;
+        color: #374151; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+        white-space: nowrap;
+    }
+    
+    .badge-status {
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-block;
+    }
+    .badge-status.done { background: #dcfce7; color: #16a34a; }
+    .badge-status.pending { background: #fef9c3; color: #ca8a04; }
+    .badge-status.processing { background: #e0f5fb; color: #0284c7; }
+    .badge-status.cancelled { background: #fee2e2; color: #dc2626; }
+
+    /* ── SEARCH BOX ── */
+    .search-box { position: relative; width: 100%; max-width: 400px; }
+    .search-box input {
+        width: 100%; padding: 0.7rem 1.2rem 0.7rem 2.8rem;
+        border-radius: 50px; border: 1px solid #cbd5e1;
+        font-family: 'Roboto', sans-serif; font-size: 0.95rem;
+        background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: all 0.3s;
+    }
+    .search-box input:focus { outline: none; border-color: #6eb5a8; box-shadow: 0 0 0 3px rgba(110,181,168,0.2); }
+    .search-box i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 1.1rem; }
+
+    /* ── BUTTONS ── */
+    .btn-add {
+        background: #6eb5a8; color: white; border: none;
+        padding: 0.7rem 1.5rem; border-radius: 50px;
+        font-weight: 700; font-size: 0.9rem; text-transform: uppercase;
+        box-shadow: 0 4px 15px rgba(110,181,168,0.3); transition: all 0.3s; cursor: pointer;
+    }
+    .btn-add:hover { background: #4a8b7f; color: white; transform: translateY(-2px); }
+
+    .btn-filter {
+        background-color: white; color: #64748b;
+        border: 1px solid #cbd5e1; width: 42px; height: 42px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: all 0.3s; cursor: pointer;
+    }
+    .btn-filter::after { display: none !important; }
+    .btn-filter:hover { transform: scale(1.1) rotate(5deg); background-color: #6eb5a8; color: white; border-color: #6eb5a8; }
+    .dropdown-menu .dropdown-item.active { background-color: rgba(110,181,168,0.15); color: #2F9E8F; }
+    .dropdown-menu .dropdown-item:hover  { background-color: rgba(110,181,168,0.08); }
+
+    /* iOS Style Switch */
+    .switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #9cd5c4; }
+    input:focus + .slider { box-shadow: 0 0 1px #9cd5c4; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    @media (max-width: 1400px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px)  { .dashboard-grid { grid-template-columns: 1fr; } .canteen-header { flex-direction: column; text-align: center; } .toolbar-menu { flex-direction: column; } .search-input { width: 100%; } }
+</style>
+{% endblock %}
+
+{% block top_header %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 fw-bold text-dark" style="letter-spacing: -0.5px;">Profil Detail Kantin</h3>
+    <a href="{% url 'admin_canteens' %}" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" style="color: var(--text-dark); background-color: #ffffff; border: 1px solid #e2e8f0;">
+        Kembali ke Daftar Kantin <i class="bi bi-arrow-right ms-2"></i>
+    </a>
+</div>
+
+<!-- HEADER PROFILE -->
+<div class="canteen-header">
+    <img src="{% static 'img/kantin.png' %}" alt="Vector" class="header-vector">
+    <img src="{% if canteen.image %}{{ canteen.image.url }}{% else %}https://ui-avatars.com/api/?name={{ canteen.name|urlencode }}&background=e0f5e6&color=15a03a&rounded=true&bold=true&size=120{% endif %}" alt="Logo" class="canteen-logo">
+    <div class="canteen-info flex-grow-1">
+        <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+            <h2>{{ canteen.name }}</h2>
+            {% if canteen.is_active %}
+                <span class="badge rounded-pill px-3 py-2" style="background:rgba(21,160,58,0.12);color:#15A03A;font-weight:600;">Aktif</span>
+            {% else %}
+                <span class="badge rounded-pill px-3 py-2" style="background:rgba(220,38,38,0.10);color:#dc2626;font-weight:600;">Nonaktif</span>
+            {% endif %}
+        </div>
+        <div class="text-muted mb-1"><i class="bi bi-person-badge me-2"></i>Pemilik: <strong class="text-dark">{{ canteen.vendor.username }}</strong></div>
+        <div class="text-muted mb-1"><i class="bi bi-geo-alt me-2"></i>Lokasi: {{ canteen.location|default:"-" }}</div>
+        <div class="text-muted small">{{ canteen.description|default:"Tidak ada deskripsi." }}</div>
+    </div>
+</div>
+
+<!-- 3 STAT CARDS WAVY (TOP) -->
+<div class="dashboard-grid">
+    <!-- Card 1: Jumlah Menu (Teal) -->
+    <div class="stat-card card-total">
+        <div class="d-flex align-items-center mb-1">
+            <div class="icon-box"><i class="bi bi-book stat-icon"></i></div>
+            <div class="stat-value ms-2">{{ total_menu|default:"0" }} <span class="stat-unit">item</span></div>
+        </div>
+        <div class="stat-title">Jumlah Menu</div>
+        <div class="chart-container-wave"><canvas id="chartMenu"></canvas></div>
+    </div>
+
+    <!-- Card 2: Pesanan (Green) -->
+    <div class="stat-card card-aktif">
+        <div class="d-flex align-items-center mb-1">
+            <div class="icon-box"><i class="bi bi-receipt stat-icon"></i></div>
+            <div class="stat-value ms-2">{{ total_pesanan|default:"0" }} <span class="stat-unit">transaksi</span></div>
+        </div>
+        <div class="stat-title">Total Pesanan</div>
+        <div class="chart-container-wave"><canvas id="chartOrders"></canvas></div>
+    </div>
+
+    <!-- Card 3: Revenue (Yellow) -->
+    <div class="stat-card card-revenue">
+        <div class="d-flex align-items-center mb-1">
+            <div class="icon-box"><i class="bi bi-cash-coin stat-icon"></i></div>
+            <div class="stat-value ms-2">{% if revenue >= 1000000 %}{{ revenue|floatformat:1|default:"0"|slice:":-6" }} <span class="stat-unit">jt</span>{% else %}{{ revenue|default:"0" }}{% endif %}</div>
+        </div>
+        <div class="stat-title">Pendapatan Kantin</div>
+        <div class="chart-container-wave"><canvas id="chartRevenue"></canvas></div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- MIDDLE LEFT: PESANAN TERAKHIR -->
+    <div class="col-lg-8">
+        <div class="table-wrapper">
+            <h2 class="list-title mb-4">PESANAN TERAKHIR</h2>
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Antrean</th>
+                            <th class="text-center">Pelanggan</th>
+                            <th class="text-center">Total (Rp)</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td class="text-center fw-bold">#{{ order.queue_number }}</td>
+                            <td class="text-center">
+                                <div class="text-dark">{{ order.user.username }}</div>
+                                <div class="small text-muted" style="text-transform:none;">{{ order.created_at|date:"d M, H:i" }}</div>
+                            </td>
+                            <td class="text-center fw-bold text-muted">Rp {{ order.total_price }}</td>
+                            <td class="text-center">
+                                <span class="badge-status {{ order.status }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">Belum ada pesanan masuk.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MIDDLE RIGHT: RATING (Blue) -->
+    <div class="col-lg-4">
+        <div class="stat-card card-rating h-100" style="min-height: 250px;">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-star-fill stat-icon"></i></div>
+                <div class="stat-value ms-2">4.8 <span class="stat-unit"><i class="bi bi-star-fill" style="font-size:0.75rem;"></i></span></div>
+            </div>
+            <div class="stat-title">Rata-rata Rating</div>
+            <div class="text-muted mt-2 small" style="z-index:2; position:relative;">Berdasarkan 150+ ulasan pengguna.</div>
+            <div class="chart-container-wave" style="height: 70%;"><canvas id="chartRating"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM: DAFTAR MENU (FULL WIDTH) -->
+<div class="row">
+    <div class="col-12">
+        <div class="table-wrapper">
+            <!-- Action Bar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <!-- Kiri: judul + search -->
+                <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                    <h2 class="list-title mb-0">DAFTAR MENU</h2>
+                    <form method="GET" action="{% url 'admin_canteen_detail' canteen.id %}" class="search-box mb-0 flex-grow-1">
+                        <input type="hidden" name="category" value="{{ category_filter }}">
+                        <i class="bi bi-search"></i>
+                        <input type="text" name="search" placeholder="Cari menu..." value="{{ search }}" onchange="this.form.submit()">
+                    </form>
+                </div>
+
+                <!-- Kanan: filter + tambah -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-filter dropdown-toggle" type="button" id="filterMenuDropdown"
+                                data-bs-toggle="dropdown" aria-expanded="false" title="Filter Kategori">
+                            <i class="bi bi-funnel-fill"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-4 border-0 mt-2 p-2"
+                            aria-labelledby="filterMenuDropdown" style="font-size: 0.95rem; min-width: 180px;">
+                            <li><a class="dropdown-item rounded-3 mb-1 {% if not category_filter %}active fw-bold{% endif %}" href="?category=&search={{ search }}"><i class="bi bi-grid-fill me-2 opacity-50"></i>Semua Menu</a></li>
+                            {% for cat in categories %}
+                            <li><a class="dropdown-item rounded-3 mb-1 {% if category_filter|lower == cat.name|lower %}active fw-bold{% endif %}" href="?category={{ cat.name }}&search={{ search }}"><i class="bi bi-hash me-2 opacity-50"></i>{{ cat.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#addMenuModal">
+                        <i class="bi bi-plus-lg me-1"></i> MENU BARU
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabel Menu -->
+            <div class="table-responsive mt-2">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;" class="text-center">No.</th>
+                            <th>FOTO MENU</th>
+                            <th>NAMA MENU</th>
+                            <th>KATEGORI MENU</th>
+                            <th>HARGA</th>
+                            <th>STOK MENU</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in menu_items %}
+                        <tr>
+                            <td class="fw-bold fs-5 text-center">{{ forloop.counter }}</td>
+                            <td>
+                                {% if item.image %}
+                                <img src="{{ item.image.url }}" alt="{{ item.name }}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;">
+                                {% else %}
+                                <img src="https://ui-avatars.com/api/?name={{ item.name|urlencode }}&background=6eb5a8&color=fff&rounded=true" alt="{{ item.name }}" style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover;">
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold" style="color: #111827; font-size: 1rem;">{{ item.name }}</div>
+                            </td>
+                            <td>{{ item.category.name|default:"-" }}</td>
+                            <td class="fw-bold">Rp {{ item.price|floatformat:"0" }}</td>
+                            <td>{{ item.order_count }} terjual</td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" {% if item.is_available %}checked{% endif %} disabled>
+                                    <span class="slider"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">Belum ada menu yang ditemukan.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Menu -->
+<div class="modal fade" id="addMenuModal" tabindex="-1" aria-labelledby="addMenuModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="addMenuModalLabel">Tambah Menu Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_add_menu' canteen.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">Nama Menu</label>
+                        <input type="text" name="name" class="form-control rounded-3" required placeholder="Contoh: Nasi Goreng Spesial">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">Kategori</label>
+                        <select name="category" class="form-select rounded-3" required>
+                            <option value="">Pilih Kategori...</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">Harga (Rp)</label>
+                        <input type="number" name="price" class="form-control rounded-3" required placeholder="Contoh: 15000">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">Foto Menu (Opsional)</label>
+                        <input type="file" name="image" class="form-control rounded-3" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-add rounded-pill px-4" style="padding-top: 0.5rem; padding-bottom: 0.5rem;">Simpan Menu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    Chart.defaults.font.family = "'Roboto', sans-serif";
+
+    const cardTooltip = {
+        backgroundColor: 'rgba(17,24,39,0.95)',
+        titleFont: { size: 13, weight: 'bold' },
+        bodyFont: { size: 12 },
+        padding: 10, cornerRadius: 8, displayColors: false
+    };
+
+    const makeGrad = (ctx, colorStart, colorEnd) => {
+        const g = ctx.createLinearGradient(0, 0, 0, 150);
+        g.addColorStop(0, colorStart);
+        g.addColorStop(1, colorEnd);
+        return g;
+    };
+
+    const lineOpts = {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { bottom: -10, left: -10, right: -10 } },
+        plugins: { legend: { display: false }, tooltip: cardTooltip },
+        scales: { x: { display: false }, y: { display: false, min: 0 } },
+        interaction: { mode: 'index', intersect: false }
+    };
+
+    const labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul', 'Ags'];
+
+    // Card 1
+    const c1 = document.getElementById('chartMenu').getContext('2d');
+    new Chart(c1, { type: 'line', data: { labels, datasets: [{
+        data: [5, 10, 8, 15, 12, 20, 18, 25],
+        borderColor: '#1a7a6a',
+        backgroundColor: makeGrad(c1, 'rgba(26,122,106,0.35)', 'rgba(26,122,106,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // Card 2
+    const c2 = document.getElementById('chartOrders').getContext('2d');
+    new Chart(c2, { type: 'line', data: { labels, datasets: [{
+        data: [20, 45, 30, 60, 50, 80, 75, 100],
+        borderColor: '#15A03A',
+        backgroundColor: makeGrad(c2, 'rgba(21,160,58,0.35)', 'rgba(21,160,58,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // Card 3
+    const c3 = document.getElementById('chartRevenue').getContext('2d');
+    new Chart(c3, { type: 'line', data: { labels, datasets: [{
+        data: [100, 250, 120, 300, 150, 350, 200, 400],
+        borderColor: '#EC8513',
+        backgroundColor: makeGrad(c3, 'rgba(236,133,19,0.35)', 'rgba(236,133,19,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // Card 4 (Rating)
+    const c4 = document.getElementById('chartRating').getContext('2d');
+    new Chart(c4, { type: 'line', data: { labels, datasets: [{
+        data: [3.5, 4.8, 3.8, 4.9, 4.0, 4.7, 4.2, 5.0],
+        borderColor: '#0E66C5',
+        backgroundColor: makeGrad(c4, 'rgba(14,102,197,0.35)', 'rgba(14,102,197,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+</script>
+{% endblock %}

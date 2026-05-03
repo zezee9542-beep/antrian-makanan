@@ -1,0 +1,682 @@
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
+
+{% block title %}Menu Makanan - Smart Food Queue{% endblock %}
+{% block nav_menu_makanan %}active{% endblock %}
+{% block header_title %}Menu Makanan{% endblock %}
+{% block header_subtitle %}Jelajahi berbagai hidangan dari semua kantin favoritmu.{% endblock %}
+
+{% block content %}
+<style>
+    /* Filter Bar */
+    .filter-bar {
+        background: transparent;
+        margin-bottom: 1.5rem;
+    }
+    .search-input-wrapper {
+        position: relative;
+        flex-grow: 1;
+    }
+    .search-input-wrapper i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+    .search-input-wrapper input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        outline: none;
+    }
+    .form-select-custom {
+        padding: 0.75rem 2.5rem 0.75rem 1rem;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        outline: none;
+        cursor: pointer;
+        min-width: 140px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 12px;
+    }
+
+    /* Category Pills */
+    .category-pills {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        scrollbar-width: none;
+    }
+    .category-pills::-webkit-scrollbar { display: none; }
+    .pill-btn {
+        padding: 0.5rem 1.2rem;
+        border-radius: 50px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #64748b;
+        font-weight: 500;
+        font-size: 0.95rem;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .pill-btn.active {
+        background: #f97316;
+        color: white;
+        border-color: #f97316;
+    }
+
+    /* Food Grid */
+    .food-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1.5rem;
+    }
+    .food-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem 1rem 1rem 1rem;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .food-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    .food-img-wrapper {
+        width: 130px;
+        height: 130px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .food-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        /* To make dummy images look like transparent food, using multiply blend mode against white card */
+        mix-blend-mode: multiply;
+    }
+    .food-info {
+        width: 100%;
+        text-align: left;
+    }
+    .food-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+        text-decoration: none;
+        display: block;
+    }
+    .food-price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+    .food-price {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #ef4444; /* Red color matching the screenshot */
+        margin: 0;
+    }
+    .add-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #f97316;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    /* PROMO BANNER */
+    .promo-banner {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        margin-bottom: 1.5rem;
+    }
+    .banner-left {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .banner-icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #fff7ed;
+        color: #f97316;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.5rem;
+    }
+    .banner-text h6 {
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 0.85rem;
+    }
+    .banner-text h2 {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+    }
+    .banner-text p {
+        color: #64748b;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    .banner-right {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .perk-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        padding: 0.75rem 1.25rem;
+        border-radius: 12px;
+    }
+    .perk-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
+        color: #f97316;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .perk-text h6 {
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.1rem 0;
+        font-size: 0.85rem;
+    }
+    .perk-text p {
+        color: #64748b;
+        margin: 0;
+        font-size: 0.75rem;
+    }
+
+    /* COMBINED WRAPPER */
+    .pos-main-wrapper {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+    
+    /* CART PANEL RIGHT SIDE */
+    .cart-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 70vh;
+    }
+    .cart-top-filters {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .cart-top-filters select {
+        flex: 1;
+        font-size: 0.85rem;
+        padding: 0.5rem 1.5rem 0.5rem 0.75rem;
+    }
+    .cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .cart-header h4 {
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    .cart-items {
+        flex-grow: 1;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        padding-right: 0.25rem;
+    }
+    .cart-items::-webkit-scrollbar { width: 4px; }
+    .cart-items::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    
+    .cart-item-card {
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        position: relative;
+    }
+    .cart-item-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+        padding-right: 24px;
+    }
+    .cart-item-price {
+        color: #f97316;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 0.75rem;
+    }
+    .cart-item-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .qty-control {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: #f8fafc;
+        border-radius: 50px;
+        padding: 0.2rem 0.4rem;
+    }
+    .qty-btn {
+        border: none;
+        background: white;
+        border-radius: 50%;
+        color: #f97316;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .qty-num {
+        font-weight: 600;
+        font-size: 0.85rem;
+        min-width: 16px;
+        text-align: center;
+    }
+    .add-notes-btn {
+        background: #f1f5f9;
+        border: none;
+        color: #64748b;
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+    }
+    .delete-btn {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        color: #ef4444;
+        background: #fef2f2;
+        border: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cart-summary {
+        border-top: 1px dashed #e2e8f0;
+        padding-top: 1rem;
+    }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.4rem;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+    .summary-total {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.75rem;
+        margin-bottom: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 1.15rem;
+    }
+    .cart-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    .cart-btn {
+        padding: 0.7rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        border: none;
+        font-size: 0.9rem;
+    }
+    .btn-dark-custom { background: #0f172a; color: white; grid-column: span 2; }
+    .btn-orange { background: #f97316; color: white; }
+    .btn-green { background: #22c55e; color: white; }
+</style>
+
+<div class="container-fluid p-0">
+    <!-- PROMO BANNER -->
+    <div class="promo-banner">
+        <div class="banner-left">
+            <div class="banner-icon-circle">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+                    <path d="M7 2v20"></path>
+                    <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+                </svg>
+            </div>
+            <div class="banner-text">
+                <h6>Good Afternoon! 👋</h6>
+                <h2>Delicious meals, delivered fresh to you</h2>
+                <p>Choose your favorite dishes and enjoy a great dining experience.</p>
+            </div>
+        </div>
+        
+        <div class="banner-right">
+            <div class="perk-item">
+                <div class="perk-icon"><i class="bi bi-bicycle"></i></div>
+                <div class="perk-text">
+                    <h6>Fast Delivery</h6>
+                    <p>30 - 45 min</p>
+                </div>
+            </div>
+            <div class="perk-item">
+                <div class="perk-icon" style="color: #f59e0b;"><i class="bi bi-star-fill"></i></div>
+                <div class="perk-text">
+                    <h6>Today's Special</h6>
+                    <p>Get 10% off on salads!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pos-main-wrapper">
+        <div class="row g-4">
+            
+            <!-- LEFT COLUMN: MENU GRID -->
+            <div class="col-xl-8 col-lg-7 border-end pe-lg-4">
+                <form method="GET" action="{% url 'student_menu' %}" id="filterForm">
+                    <!-- Filter Bar -->
+                    <div class="filter-bar d-flex flex-column flex-md-row gap-3 align-items-md-center">
+                        <div class="search-input-wrapper">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="search" placeholder="Search in products">
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <select name="category" class="form-select-custom bg-white">
+                                <option value="">All Category</option>
+                                <option>Rice</option>
+                                <option>Beverages</option>
+                            </select>
+                            <select name="canteen" class="form-select-custom bg-white">
+                                <option value="">Select Brand</option>
+                                <option>Kantin Utama</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Category Pills -->
+                    <div class="category-pills">
+                        <a href="#" class="pill-btn active">Show All</a>
+                        <a href="#" class="pill-btn">Rice</a>
+                        <a href="#" class="pill-btn">Beverages</a>
+                        <a href="#" class="pill-btn">Salads</a>
+                        <a href="#" class="pill-btn">Soup</a>
+                        <a href="#" class="pill-btn">Pizza</a>
+                    </div>
+                </form>
+
+                <!-- Food Grid (DUMMY DATA) -->
+                <div class="food-grid">
+                    <!-- Card 1 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=300&q=80" alt="Shrimp Basil Salad" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Shrimp Basil Salad</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 15.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1639024471283-03518883512d?auto=format&fit=crop&w=300&q=80" alt="Onion Rings" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Onion Rings</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 12.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1528607929212-23160b466fd9?auto=format&fit=crop&w=300&q=80" alt="Smoked Bacon" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Smoked Bacon</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 20.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 4 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=300&q=80" alt="Fresh Tomatoes" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Fresh Tomatoes</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 8.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 5 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80" alt="Chicken Burger" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Chicken Burger</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 25.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 6 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1625938144755-652e08e359b7?auto=format&fit=crop&w=300&q=80" alt="Red Onion Rings" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Red Onion Rings</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 12.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 7 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=300&q=80" alt="Beef Burger" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Beef Burger</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 28.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 8 -->
+                    <div class="food-card">
+                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=300&q=80" alt="Grilled Burger" class="food-img">
+                        </a>
+                        <div class="food-info">
+                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Grilled Burger</a>
+                            <div class="food-price-row">
+                                <span class="food-price">Rp 30.000</span>
+                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: CART PANEL (DUMMY) -->
+            <div class="col-xl-4 col-lg-5 ps-lg-4">
+                <div class="cart-panel">
+                    <!-- Inner search/filters mimicking POS -->
+                    <div class="search-input-wrapper mb-3">
+                        <i class="bi bi-search" style="font-size: 0.8rem;"></i>
+                        <input type="text" placeholder="Search in Existing" style="padding: 0.5rem 1rem 0.5rem 2rem; font-size: 0.85rem;">
+                    </div>
+                    <div class="cart-top-filters">
+                        <select class="form-select-custom bg-white">
+                            <option>Select Dining</option>
+                        </select>
+                        <select class="form-select-custom bg-white">
+                            <option>Select Table</option>
+                        </select>
+                    </div>
+
+                    <!-- Order Header -->
+                    <div class="cart-header">
+                        <h4><i class="bi bi-handbag"></i> Order #20</h4>
+                    </div>
+
+                    <!-- Cart Items List -->
+                    <div class="cart-items">
+                        <!-- Cart Item 1 -->
+                        <div class="cart-item-card">
+                            <button class="delete-btn"><i class="bi bi-trash3"></i></button>
+                            <div class="cart-item-title">Fresh Basil Salad</div>
+                            <div class="cart-item-price">Rp 15.000 × 2 = Rp 30.000</div>
+                            <div class="cart-item-controls">
+                                <div class="qty-control">
+                                    <button class="qty-btn">-</button>
+                                    <span class="qty-num">2</span>
+                                    <button class="qty-btn" style="background:#f97316; color:white;">+</button>
+                                </div>
+                                <button class="add-notes-btn"><i class="bi bi-pencil-square"></i> Add Notes</button>
+                            </div>
+                        </div>
+                        <!-- Cart Item 2 -->
+                        <div class="cart-item-card">
+                            <button class="delete-btn"><i class="bi bi-trash3"></i></button>
+                            <div class="cart-item-title">Chicken Burger</div>
+                            <div class="cart-item-price">Rp 25.000 × 1 = Rp 25.000</div>
+                            <div class="cart-item-controls">
+                                <div class="qty-control">
+                                    <button class="qty-btn">-</button>
+                                    <span class="qty-num">1</span>
+                                    <button class="qty-btn" style="background:#f97316; color:white;">+</button>
+                                </div>
+                                <button class="add-notes-btn"><i class="bi bi-pencil-square"></i> Add Notes</button>
+                            </div>
+                        </div>
+                        <!-- Cart Item 3 -->
+                        <div class="cart-item-card">
+                            <button class="delete-btn"><i class="bi bi-trash3"></i></button>
+                            <div class="cart-item-title">Onion Rings</div>
+                            <div class="cart-item-price">Rp 12.000 × 1 = Rp 12.000</div>
+                            <div class="cart-item-controls">
+                                <div class="qty-control">
+                                    <button class="qty-btn">-</button>
+                                    <span class="qty-num">1</span>
+                                    <button class="qty-btn" style="background:#f97316; color:white;">+</button>
+                                </div>
+                                <button class="add-notes-btn"><i class="bi bi-pencil-square"></i> Add Notes</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary & Checkout -->
+                    <div class="cart-summary mt-auto">
+                        <div class="summary-row">
+                            <span>Sub total :</span>
+                            <span>Rp 67.000</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Product Discount :</span>
+                            <span>Rp 0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Extra Discount :</span>
+                            <span><i class="bi bi-pencil me-1" style="font-size:0.7rem;"></i> Rp 0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Coupon discount :</span>
+                            <span><i class="bi bi-pencil me-1" style="font-size:0.7rem;"></i> Rp 0</span>
+                        </div>
+                        <div class="summary-total">
+                            <span>Total :</span>
+                            <span>Rp 67.000</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="cart-actions">
+                            <button class="cart-btn btn-dark-custom">Checkout & Proses</button>
+                            <button class="cart-btn btn-orange">Bayar Nanti</button>
+                            <button class="cart-btn btn-green">Bayar Sekarang</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

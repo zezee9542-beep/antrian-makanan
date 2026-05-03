@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - {{ item.name }}{% endblock %}
+{% block page_title %}Detail Menu{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card card-glass mb-4">
+            <div class="row g-0">
+                <div class="col-md-5">
+                    {% if item.image %}
+                    <img src="{{ item.image.url }}" class="img-fluid rounded-start h-100 object-fit-cover w-100" alt="{{ item.name }}" style="min-height: 250px;">
+                    {% else %}
+                    <div class="h-100 w-100 bg-surface d-flex align-items-center justify-content-center display-1 rounded-start" style="min-height: 250px;">🍽️</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-7">
+                    <div class="card-body p-4 p-md-5 d-flex flex-column h-100">
+                        <div class="mb-2">
+                            <span class="badge bg-surface border-custom text-primary me-2">{{ item.category.name|default:"Umum" }}</span>
+                            <span class="badge {% if item.is_available %}bg-success text-success bg-opacity-25 border border-success{% else %}bg-danger text-danger bg-opacity-25 border border-danger{% endif %}">
+                                {% if item.is_available %}Tersedia{% else %}Habis{% endif %}
+                            </span>
+                        </div>
+                        <h2 class="card-title fw-bold text-white mb-2">{{ item.name }}</h2>
+                        <h4 class="text-primary fw-bold mb-4">Rp {{ item.price }}</h4>
+                        
+                        <p class="card-text text-muted mb-4">{{ item.description|default:"Tidak ada deskripsi." }}</p>
+                        
+                        <div class="mt-auto pt-3 border-top border-custom d-flex justify-content-between align-items-center">
+                            <div class="text-muted small"><i class="bi bi-shop"></i> {{ item.canteen.name }}</div>
+                            <div class="text-muted small"><i class="bi bi-bag-check"></i> Terjual: {{ item.order_count }}</div>
+                        </div>
+                        
+                        {% if item.is_available %}
+                        <button onclick="addToCartDetail({{ item.id }})" class="btn btn-primary-custom w-100 mt-4 py-3 fs-5 justify-content-center">
+                            <i class="bi bi-cart-plus me-2"></i> Tambah ke Keranjang
+                        </button>
+                        {% else %}
+                        <button class="btn btn-secondary w-100 mt-4 py-3 fs-5" disabled>Stok Habis</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if related %}
+        <h5 class="fw-bold mb-3 mt-5">Menu Lainnya di Kantin Ini</h5>
+        <div class="row g-3">
+            {% for r in related %}
+            <div class="col-6 col-md-3">
+                <a href="{% url 'menu_detail' r.id %}" class="text-decoration-none">
+                    <div class="card menu-card h-100">
+                        {% if r.image %}
+                        <img src="{{ r.image.url }}" class="menu-card-img" style="height: 120px;" alt="{{ r.name }}">
+                        {% else %}
+                        <div class="menu-card-placeholder" style="height: 120px; font-size: 32px;">🍽️</div>
+                        {% endif %}
+                        <div class="card-body p-2 p-md-3">
+                            <div class="fw-bold text-white fs-6 text-truncate">{{ r.name }}</div>
+                            <div class="text-primary fw-bold">Rp {{ r.price }}</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function addToCartDetail(itemId) {
+        fetch(`/cart/add/${itemId}/`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                window.location.href = "{% url 'cart' %}";
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Dashboard Penjual{% endblock %}
+{% block page_title %}Dashboard Kantin <span>{{ canteen.name }}</span>{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card orange">
+            <i class="bi bi-hourglass-split stat-icon"></i>
+            <div class="stat-value text-warning">{{ pending_count }}</div>
+            <div class="stat-label">Menunggu Diproses</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card purple">
+            <i class="bi bi-fire stat-icon"></i>
+            <div class="stat-value text-info">{{ processing_count }}</div>
+            <div class="stat-label">Sedang Dimasak</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card green">
+            <i class="bi bi-check2-all stat-icon"></i>
+            <div class="stat-value text-primary">{{ done_count }}</div>
+            <div class="stat-label">Selesai Hari Ini</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <i class="bi bi-cash-coin stat-icon"></i>
+            <div class="stat-value fs-4 mt-2 mb-1">Rp {{ revenue_today }}</div>
+            <div class="stat-label">Pendapatan Hari Ini</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- RECENT ORDERS TABLE -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header-custom">
+                Pesanan Terbaru
+                <a href="{% url 'vendor_orders' %}" class="btn btn-sm btn-outline-primary-custom">Lihat Semua</a>
+            </div>
+            <div class="card-body p-0 overflow-auto">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Antrian</th>
+                            <th>Pelanggan</th>
+                            <th>Item</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in recent_orders %}
+                        <tr>
+                            <td><div class="fw-bold fs-5 text-primary">#{{ o.queue_number }}</div></td>
+                            <td>{{ o.user.username }}<br><small class="text-muted">{{ o.created_at|date:"H:i" }}</small></td>
+                            <td>{{ o.items.count }} item</td>
+                            <td class="fw-bold">Rp {{ o.total_price }}</td>
+                            <td><span class="badge status-badge badge-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                            <td>
+                                <a href="{% url 'vendor_order_detail' o.id %}" class="btn btn-sm btn-outline-primary-custom">Detail</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center p-4 text-muted">Belum ada pesanan masuk.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOURLY CHART -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header-custom">Grafik Pesanan Hari Ini</div>
+            <div class="card-body">
+                <canvas id="todayChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('todayChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ hours_labels|safe }},
+            datasets: [{
+                label: 'Jumlah Pesanan',
+                data: {{ hourly_counts|safe }},
+                borderColor: '#00C896',
+                backgroundColor: 'rgba(0, 200, 150, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Auto refresh dashboard every 30 seconds for new orders
+    setTimeout(() => window.location.reload(), 30000);
+</script>
+{% endblock %}

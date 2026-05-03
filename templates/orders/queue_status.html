@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Antrian #{{ order.queue_number }}{% endblock %}
+{% block page_title %}Status Pesanan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        
+        <!-- Queue Display Card -->
+        <div class="card card-glass text-center p-5 mb-4 position-relative overflow-hidden">
+            <div class="position-absolute top-0 end-0 p-3">
+                <span class="badge status-badge badge-{{ order.status }}" id="statusBadgeDisplay">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+            
+            <h5 class="text-muted fw-bold mb-4">NOMOR ANTRIAN</h5>
+            
+            <div class="queue-ring mb-4">
+                <div class="queue-number-big" id="queueNumberDisplay">{{ order.queue_number }}</div>
+            </div>
+            
+            <h4 class="fw-bold mb-1">{{ order.canteen.name }}</h4>
+            <p class="text-muted mb-0">Total: Rp {{ order.total_price }}</p>
+        </div>
+
+        <!-- Order Stepper -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3">Progress Pesanan</h6>
+            <div class="order-stepper">
+                <div class="step {% if order.status in 'pending,processing,done' %}done{% endif %}" id="step1">
+                    <div class="step-dot"><i class="bi bi-clock"></i></div>
+                    <div class="step-label">Menunggu</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step {% if order.status in 'processing,done' %}done{% endif %}" id="step2">
+                    <div class="step-dot"><i class="bi bi-fire"></i></div>
+                    <div class="step-label">Diproses</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step {% if order.status == 'done' %}done active{% endif %}" id="step3">
+                    <div class="step-dot"><i class="bi bi-check2-all"></i></div>
+                    <div class="step-label">Selesai</div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center p-3 rounded bg-surface border-custom" id="etaContainer">
+                <div class="text-muted small mb-1">Perkiraan Waktu</div>
+                <h4 class="text-primary fw-bold mb-0" id="etaDisplay">
+                    {% if order.status == 'done' %}
+                        Pesanan Siap!
+                    {% elif order.status == 'cancelled' %}
+                        Dibatalkan
+                    {% else %}
+                        Menghitung...
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="card">
+            <div class="card-header-custom">Detail Item</div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for item in order.items.all %}
+                    <li class="list-group-item bg-transparent border-custom d-flex justify-content-between align-items-center p-3 text-white">
+                        <div>
+                            <span class="fw-bold">{{ item.quantity }}x</span> {{ item.menu_item.name }}
+                        </div>
+                        <span class="fw-bold">Rp {{ item.subtotal }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const orderId = {{ order.id }};
+    const notifAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // short bell sound
+    let currentStatus = '{{ order.status }}';
+
+    function updateQueueUI(data) {
+        // Update Status Badge
+        const badge = document.getElementById('statusBadgeDisplay');
+        badge.className = `badge status-badge badge-${data.status}`;
+        badge.textContent = data.status_display;
+
+        // Update Stepper
+        document.getElementById('step1').className = `step ${['pending', 'processing', 'done'].includes(data.status) ? 'done' : ''}`;
+        document.getElementById('step2').className = `step ${['processing', 'done'].includes(data.status) ? 'done' : ''}`;
+        document.getElementById('step3').className = `step ${data.status === 'done' ? 'done active' : ''}`;
+
+        // Update ETA
+        const eta = document.getElementById('etaDisplay');
+        if (data.status === 'done') {
+            eta.textContent = 'Pesanan Siap Diambil!';
+            eta.className = 'text-success fw-bold mb-0';
+        } else if (data.status === 'cancelled') {
+            eta.textContent = 'Pesanan Dibatalkan';
+            eta.className = 'text-danger fw-bold mb-0';
+        } else {
+            eta.textContent = `~${data.estimated_minutes} Menit`;
+            eta.className = 'text-warning fw-bold mb-0';
+        }
+
+        // Play sound if status changes to processing or done
+        if (currentStatus !== data.status && ['processing', 'done'].includes(data.status)) {
+            notifAudio.play().catch(e => console.log('Audio autoplay blocked'));
+            currentStatus = data.status;
+        }
+    }
+
+    function pollQueue() {
+        if (['done', 'cancelled'].includes(currentStatus)) return; // stop polling
+        
+        fetch(`/queue/${orderId}/api/`)
+            .then(res => res.json())
+            .then(data => updateQueueUI(data))
+            .catch(err => console.error('Polling error', err));
+    }
+
+    // Poll every 4 seconds
+    if (!['done', 'cancelled'].includes(currentStatus)) {
+        setInterval(pollQueue, 4000);
+    }
+</script>
+{% endblock %}

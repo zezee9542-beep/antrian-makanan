@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Menu {{ canteen.name }}{% endblock %}
+{% block page_title %}Menu: <span>{{ canteen.name }}</span>{% endblock %}
+
+{% block content %}
+
+<!-- CATEGORIES FILTER -->
+<div class="d-flex gap-2 mb-4 overflow-auto pb-2" style="scrollbar-width: none;">
+    <a href="{% url 'menu_list' canteen.id %}" class="btn {% if not selected_cat %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
+        Semua Menu
+    </a>
+    {% for cat in categories %}
+    <a href="?category={{ cat.id }}" class="btn {% if selected_cat == cat.id|stringformat:'s' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
+        {{ cat.icon }} {{ cat.name }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- MENU GRID -->
+<div class="row g-4">
+    {% for item in items %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="card menu-card h-100 position-relative">
+            <a href="{% url 'menu_detail' item.id %}" class="text-decoration-none">
+                {% if item.image %}
+                <img src="{{ item.image.url }}" class="menu-card-img" alt="{{ item.name }}">
+                {% else %}
+                <div class="menu-card-placeholder">🍽️</div>
+                {% endif %}
+                
+                <div class="menu-card-body pb-0">
+                    <div class="menu-card-category">{{ item.category.name|default:"Umum" }}</div>
+                    <div class="menu-card-name text-white">{{ item.name }}</div>
+                </div>
+            </a>
+            
+            <div class="menu-card-footer mt-auto bg-transparent">
+                <div class="menu-card-price">Rp {{ item.price }}</div>
+                <button onclick="addToCart({{ item.id }})" class="btn-add-cart">
+                    <i class="bi bi-plus-lg"></i> Tambah
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card card-body text-center p-5 text-muted">
+            <i class="bi bi-emoji-frown fs-1 mb-3"></i>
+            <h5>Belum ada menu yang tersedia.</h5>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- FLOATING CART BUTTON (Mobile only) -->
+<a href="{% url 'cart' %}" class="btn btn-primary-custom rounded-circle position-fixed bottom-0 end-0 m-4 d-md-none shadow-lg" style="width: 60px; height: 60px; z-index: 1000; font-size: 24px;">
+    <i class="bi bi-cart3"></i>
+</a>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function addToCart(itemId) {
+        fetch(`/cart/add/${itemId}/`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // Flash success via toast (simplified)
+                const toastHTML = `
+                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
+                    <div class="toast align-items-center text-white bg-success border-0 show" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body"><i class="bi bi-check-circle me-2"></i> Berhasil ditambahkan!</div>
+                        </div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML('beforeend', toastHTML);
+                setTimeout(() => document.querySelector('.toast').remove(), 2000);
+                
+                // Update Badge
+                updateCartBadge();
+            }
+        });
+    }
+</script>
+{% endblock %}

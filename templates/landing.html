@@ -1,0 +1,939 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Food Queue - Pesan Makanan Tanpa Antri</title>
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- AOS Animation CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --primary: #f97316;
+            /* Orange */
+            --primary-hover: #ea580c;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --bg-soft: #fdfdfd;
+            --navy: #111827;
+            /* Dark footer */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            background-color: var(--bg-soft);
+            overflow-x: hidden;
+        }
+
+        /* ================= NAVBAR ================= */
+        .navbar-custom {
+            padding: 1.25rem 5%;
+            background: white;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .navbar-brand img {
+            height: 45px;
+            object-fit: contain;
+        }
+
+        .nav-link-custom {
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin: 0 0.8rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-link-custom:hover {
+            color: var(--primary);
+        }
+
+        .nav-link-custom.active {
+            color: var(--primary);
+        }
+
+        @media (min-width: 992px) {
+            .navbar-center-nav {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+
+        .btn-outline-custom {
+            border: 2px solid #fed7aa; /* Light orange border */
+            color: #374151; /* Dark text */
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            transform: translateY(0);
+            box-shadow: 0 4px 0px #fed7aa;
+        }
+
+        .btn-outline-custom:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #fff7ed;
+            transform: translateY(4px);
+            box-shadow: 0 0px 0px #fed7aa;
+        }
+
+        .btn-primary-custom {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            border: 2px solid var(--primary);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            transform: translateY(0);
+            box-shadow: 0 4px 0px #c2410c;
+        }
+
+        .btn-primary-custom:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: white;
+            transform: translateY(4px);
+            box-shadow: 0 0px 0px #c2410c;
+        }
+
+        /* ================= HERO SECTION ================= */
+        .hero-section {
+            padding: 3rem 5% 6rem 5%;
+            background-color: #ffffff;
+            /* Gradient overlay covers the left side and fades out towards the right over the background image */
+            background-image: linear-gradient(to right, #ffffff 50%, rgba(255, 255, 255, 0.95) 70%, transparent 95%),
+            url("{% static 'img/back2.png' %}");
+            background-size: 100% 100%, contain;
+            background-position: left center, right center;
+            background-repeat: no-repeat;
+            position: relative;
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+        }
+
+
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 1.5rem;
+            color: #111827;
+            letter-spacing: -1px;
+        }
+
+        .hero-title span {
+            color: var(--primary);
+        }
+
+        .hero-text {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 90%;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-hero-primary {
+            background: var(--primary);
+            color: white;
+            padding: 0.9rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 0px #c2410c;
+            position: relative;
+            transform: translateY(0);
+            z-index: 1;
+            border: 2px solid var(--primary);
+        }
+
+        .btn-hero-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: white;
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px #c2410c;
+        }
+
+        .btn-hero-outline {
+            background: white;
+            color: var(--text-dark);
+            padding: 0.9rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            box-shadow: 0 6px 0px #9ca3af;
+        }
+
+        .btn-hero-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #fff7ed;
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px #9ca3af;
+        }
+
+        .trusted-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .avatar-group {
+            display: flex;
+        }
+
+        .avatar-group img {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid white;
+            margin-left: -12px;
+            object-fit: cover;
+        }
+
+        .avatar-group img:first-child {
+            margin-left: 0;
+        }
+
+        .trusted-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stars {
+            color: #facc15;
+            font-size: 1rem;
+        }
+
+        /* ================= FEATURES (4 CARDS) ================= */
+        .features-section {
+            padding: 0 5% 5rem 5%;
+            margin-top: -4rem;
+            /* overlaps with hero */
+            position: relative;
+            z-index: 2;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+            height: 100%;
+            text-align: center;
+            border: 1px solid #f8fafc;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-icon {
+            width: 65px;
+            height: 65px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        .bg-icon-1 {
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+        .bg-icon-2 {
+            background: #ecfdf5;
+            color: #10b981;
+        }
+
+        .bg-icon-3 {
+            background: #f5f3ff;
+            color: #8b5cf6;
+        }
+
+        .bg-icon-4 {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .feature-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            color: var(--text-dark);
+        }
+
+        .feature-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /* ================= CARA KERJA ================= */
+        .how-it-works-section {
+            padding: 5rem 5% 6rem 5%;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 4rem;
+            color: #111827;
+        }
+
+        .section-title span {
+            color: var(--primary);
+        }
+
+        .step-card {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-img-wrapper {
+            position: relative;
+            margin-bottom: 2rem;
+            display: inline-block;
+        }
+
+        .step-img {
+            width: 100%;
+            max-width: 240px;
+            height: auto;
+            border-radius: 20px;
+            object-fit: cover;
+        }
+
+        .step-number {
+            position: absolute;
+            bottom: -15px;
+            left: -15px;
+            width: 45px;
+            height: 45px;
+            background: var(--primary);
+            color: white;
+            font-weight: 800;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .step-text {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            padding: 0 1rem;
+        }
+
+        .step-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.8rem;
+            opacity: 0.6;
+        }
+
+        /* ================= BOTTOM BANNER ================= */
+        .cta-banner-wrapper {
+            padding: 0 5% 5rem 5%;
+            background: white;
+        }
+
+        .cta-banner {
+            background: linear-gradient(135deg, #fffaf0, #fff7ed);
+            border-radius: 24px;
+            padding: 0 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid #ffedd5;
+        }
+
+        .cta-img {
+            height: 240px;
+            object-fit: contain;
+            margin-bottom: 0;
+            transform: translateY(-10px);
+        }
+
+        .cta-content {
+            flex-grow: 1;
+            padding: 3rem 2rem;
+        }
+
+        .cta-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            color: #111827;
+        }
+
+        .cta-title span {
+            color: var(--primary);
+        }
+
+        .cta-text {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin-bottom: 0;
+            max-width: 90%;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-shrink: 0;
+            padding: 3rem 0;
+        }
+
+        .btn-cta-primary {
+            background: var(--primary);
+            color: white;
+            padding: 0.9rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            box-shadow: 0 6px 0px #c2410c;
+            border: 2px solid var(--primary);
+        }
+
+        .btn-cta-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: white;
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px #c2410c;
+        }
+
+        .btn-cta-white {
+            background: white;
+            color: var(--text-dark);
+            padding: 0.9rem 2.5rem;
+            border-radius: 10px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 2px solid #d1d5db;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+            box-shadow: 0 6px 0px #9ca3af;
+        }
+
+        .btn-cta-white:hover {
+            background: #f9fafb;
+            color: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px #9ca3af;
+        }
+
+        /* ================= FOOTER ================= */
+        .footer-custom {
+            background: var(--navy);
+            color: #e5e7eb;
+            padding: 5rem 5% 2rem 5%;
+        }
+
+        .footer-logo {
+            height: 45px;
+            margin-bottom: 1rem;
+            filter: brightness(0) invert(1);
+            /* Makes logo white if it's black/colored */
+        }
+
+        .footer-logo-text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-desc {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .social-icon:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .footer-heading {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .contact-info {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        .contact-info span {
+            color: white;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .contact-item {
+            margin-bottom: 1.2rem;
+        }
+
+        .footer-bottom {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        /* ================= RESPONSIVE ================= */
+        @media (max-width: 991px) {
+            .hero-section {
+                padding: 3rem 5% 6rem 5%;
+            }
+
+            .hero-section .row {
+                flex-direction: column-reverse;
+                text-align: center;
+            }
+
+            .hero-title {
+                font-size: 2.8rem;
+            }
+
+            .hero-text {
+                margin: 0 auto 2rem auto;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .trusted-box {
+                justify-content: center;
+            }
+
+            .step-arrow {
+                display: none;
+            }
+
+            .cta-banner {
+                flex-direction: column;
+                text-align: center;
+                padding: 2rem;
+            }
+
+            .cta-img {
+                height: 180px;
+                transform: translateY(0);
+                margin-bottom: -1rem;
+            }
+
+            .cta-content {
+                padding: 2rem 0 1rem 0;
+            }
+
+            .cta-buttons {
+                padding: 0;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.2rem;
+            }
+
+            .cta-title {
+                font-size: 1.8rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-cta-primary,
+            .btn-cta-white {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top" style="background: white;">
+        <div class="container-fluid px-4 px-lg-5">
+            <a class="navbar-brand d-flex align-items-center" href="#" style="gap: 2px;">
+                <img src="{% static 'img/logo2.png' %}" alt="Logo" style="height: 48px; border-radius: 8px;">
+                <div class="brand-text d-none d-sm-block ms-1">
+                    <div style="font-size: 1.6rem; font-weight: 800; color: #111827;">Smart<span style="color: var(--primary);">Food</span></div>
+                </div>
+            </a>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav navbar-center-nav gap-lg-4 mb-3 mb-lg-0 mt-3 mt-lg-0">
+                    <li class="nav-item"><a class="nav-link-custom active" href="#">Beranda</a></li>
+                    <li class="nav-item"><a class="nav-link-custom" href="#">Fitur</a></li>
+                    <li class="nav-item"><a class="nav-link-custom" href="#">Cara Kerja</a></li>
+                    <li class="nav-item"><a class="nav-link-custom" href="#">Tentang</a></li>
+                    <li class="nav-item"><a class="nav-link-custom" href="#">Kontak</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3 ms-lg-auto mt-2 mt-lg-0">
+                    <a href="{% url 'login' %}" class="btn-outline-custom">Login</a>
+                    <a href="{% url 'register' %}" class="btn-primary-custom">Register</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+        <div class="row align-items-center w-100 g-5">
+            <div class="col-lg-6 col-xl-5 ps-lg-5" data-aos="fade-right" data-aos-duration="1000">
+                <h1 class="hero-title">Pesan Makanan<br>Tanpa Antri,<br><span>Lebih Cepat & Praktis</span></h1>
+                <p class="hero-text">Smart Food Queue System adalah solusi digital untuk kantin sekolah/kampus. Pesan
+                    makanan lewat HP, dapat nomor antrian, dan ambil pesananmu tanpa desak-desakan.</p>
+                <div class="hero-buttons">
+                    <a href="{% url 'scan_qr' %}" class="btn-hero-primary"><i class="bi bi-qr-code-scan"></i> Scan QR
+                        Sekarang</a>
+                    <a href="{% url 'login' %}" class="btn-hero-outline"><i class="bi bi-person"></i> Login /
+                        Register</a>
+                </div>
+                <div class="trusted-box mt-4">
+                    <div class="avatar-group">
+                        <img src="https://ui-avatars.com/api/?name=Andi&background=d1d5db&color=374151" alt="User 1">
+                        <img src="https://ui-avatars.com/api/?name=Budi&background=9ca3af&color=111827" alt="User 2">
+                        <img src="https://ui-avatars.com/api/?name=Citra&background=6b7280&color=f3f4f6" alt="User 3">
+                    </div>
+                </div>
+            </div>
+            <!-- Empty column since the image is now the background -->
+            <div class="col-lg-6 col-xl-7"></div>
+        </div>
+    </section>
+
+    <!-- FEATURES (4 CARDS) -->
+    <section class="features-section">
+        <div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon bg-icon-1"><i class="bi bi-qr-code-scan"></i></div>
+                    <h4 class="feature-title">Scan QR Code</h4>
+                    <p class="feature-text">Scan QR di kantin untuk mendapatkan nomor antrian secara otomatis.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon bg-icon-2"><i class="bi bi-clock-history"></i></div>
+                    <h4 class="feature-title">Real-time Antrian</h4>
+                    <p class="feature-text">Pantau posisi antrianmu secara real-time langsung dari smartphone.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon bg-icon-3"><i class="bi bi-bell"></i></div>
+                    <h4 class="feature-title">Notifikasi Cerdas</h4>
+                    <p class="feature-text">Dapatkan notifikasi saat giliranmu hampir tiba atau pesanan siap diambil.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon bg-icon-4"><i class="bi bi-star"></i></div>
+                    <h4 class="feature-title">AI Rekomendasi</h4>
+                    <p class="feature-text">Dapatkan rekomendasi makanan sesuai kebiasaan dan waktu.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CARA KERJA SECTION -->
+    <section class="how-it-works-section">
+        <h2 class="section-title">Cara Kerja <span>Smart Food Queue</span></h2>
+
+        <div class="row g-4 justify-content-center">
+            <!-- Step 1 -->
+            <div class="col-md-6 col-lg-3 d-flex">
+                <div class="step-card flex-grow-1">
+                    <div class="step-img-wrapper">
+                        <img src="{% static 'img/qr.png' %}" alt="Scan QR Code" class="step-img">
+                        <div class="step-number">1</div>
+                    </div>
+                    <h4 class="step-title">Scan QR Code</h4>
+                    <p class="step-text">Scan QR Code di kantin menggunakan kamera HP kamu.</p>
+                </div>
+                <div class="step-arrow d-none d-lg-flex ms-3"><i class="bi bi-chevron-right"></i></div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="col-md-6 col-lg-3 d-flex">
+                <div class="step-card flex-grow-1">
+                    <div class="step-img-wrapper">
+                        <img src="{% static 'img/antrian.png' %}" alt="Dapat Nomor Antrian" class="step-img">
+                        <div class="step-number">2</div>
+                    </div>
+                    <h4 class="step-title">Dapat Nomor Antrian</h4>
+                    <p class="step-text">Sistem akan memberikan nomor antrian secara otomatis.</p>
+                </div>
+                <div class="step-arrow d-none d-lg-flex ms-3"><i class="bi bi-chevron-right"></i></div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="col-md-6 col-lg-3 d-flex">
+                <div class="step-card flex-grow-1">
+                    <div class="step-img-wrapper">
+                        <img src="{% static 'img/tunggu.png' %}" alt="Pantau Antrian" class="step-img">
+                        <div class="step-number">3</div>
+                    </div>
+                    <h4 class="step-title">Pantau Antrian</h4>
+                    <p class="step-text">Pantau posisi antrian secara real-time sambil menunggu dengan nyaman.</p>
+                </div>
+                <div class="step-arrow d-none d-lg-flex ms-3"><i class="bi bi-chevron-right"></i></div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="col-md-6 col-lg-3 d-flex">
+                <div class="step-card flex-grow-1">
+                    <div class="step-img-wrapper">
+                        <img src="{% static 'img/ambil.png' %}" alt="Ambil Pesanan" class="step-img">
+                        <div class="step-number">4</div>
+                    </div>
+                    <h4 class="step-title">Ambil Pesanan</h4>
+                    <p class="step-text">Saat giliran tiba, ambil pesananmu di counter kantin.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOTTOM CTA BANNER -->
+    <div class="cta-banner-wrapper">
+        <div class="cta-banner">
+            <img src="{% static 'img/vector.png' %}" alt="Vector Character" class="cta-img">
+            <div class="cta-content">
+                <h2 class="cta-title">Siap Makan <span>Tanpa Antri?</span></h2>
+                <p class="cta-text">Gabung sekarang dan rasakan pengalaman pesan makanan yang lebih cepat, mudah, dan
+                    nyaman!</p>
+            </div>
+            <div class="cta-buttons">
+                <a href="{% url 'register' %}" class="btn-cta-primary">Register Sekarang <i
+                        class="bi bi-arrow-right"></i></a>
+                <a href="{% url 'login' %}" class="btn-cta-white">Login</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer-custom">
+        <div class="row g-5">
+            <div class="col-lg-4">
+                <div class="footer-logo-text">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo" class="footer-logo mb-0">
+                    <div>
+                        <div class="fw-bold fs-5 text-white" style="line-height: 1.1;">SmartFood</div>
+                        <div style="font-size: 12px; color: #9ca3af;">Queue System</div>
+                    </div>
+                </div>
+                <p class="footer-desc">Sistem antrian dan pemesanan makanan untuk kantin sekolah/kampus yang lebih
+                    modern dan praktis.</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon"><i class="bi bi-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="bi bi-tiktok"></i></a>
+                    <a href="#" class="social-icon"><i class="bi bi-whatsapp"></i></a>
+                </div>
+            </div>
+
+            <div class="col-lg-2 col-md-4">
+                <h5 class="footer-heading">Menu</h5>
+                <ul class="footer-links">
+                    <li><a href="#">Beranda</a></li>
+                    <li><a href="#">Fitur</a></li>
+                    <li><a href="#">Cara Kerja</a></li>
+                    <li><a href="#">Tentang</a></li>
+                    <li><a href="#">Kontak</a></li>
+                </ul>
+            </div>
+
+            <div class="col-lg-2 col-md-4">
+                <h5 class="footer-heading">Untuk Siswa</h5>
+                <ul class="footer-links">
+                    <li><a href="#">Scan QR</a></li>
+                    <li><a href="#">Menu Makanan</a></li>
+                    <li><a href="#">Status Antrian</a></li>
+                    <li><a href="#">Riwayat Pesanan</a></li>
+                    <li><a href="#">Bantuan</a></li>
+                </ul>
+            </div>
+
+            <div class="col-lg-2 col-md-4">
+                <h5 class="footer-heading">Untuk Kantin</h5>
+                <ul class="footer-links">
+                    <li><a href="#">Login Penjual</a></li>
+                    <li><a href="#">Kelola Menu</a></li>
+                    <li><a href="#">Daftar Antrian</a></li>
+                    <li><a href="#">Statistik Penjualan</a></li>
+                </ul>
+            </div>
+
+            <div class="col-lg-2 col-md-12">
+                <h5 class="footer-heading">Kontak</h5>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span>Email</span>
+                        info@smartfood.id
+                    </div>
+                    <div class="contact-item">
+                        <span>Telepon</span>
+                        0812-3456-7890
+                    </div>
+                    <div class="contact-item">
+                        <span>Alamat</span>
+                        Jl. Pendidikan No. 123, <br>Kota Belajar, Indonesia
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            &copy; 2024 Smart Food Queue System. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS Animation JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 50,
+        });
+    </script>
+</body>
+
+</html>

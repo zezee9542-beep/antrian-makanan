@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Riwayat Pesanan{% endblock %}
+{% block page_title %}Riwayat Pesanan Saya{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card card-glass">
+            <div class="card-body p-0 overflow-auto">
+                <table class="table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>Antrian</th>
+                            <th>Kantin</th>
+                            <th>Tanggal</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold fs-5 text-primary">#{{ order.queue_number }}</div>
+                            </td>
+                            <td class="fw-bold text-white">{{ order.canteen.name }}</td>
+                            <td>{{ order.created_at|date:"d M Y, H:i" }}</td>
+                            <td class="fw-bold">Rp {{ order.total_price }}</td>
+                            <td>
+                                <span class="badge status-badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary-custom">Detail</a>
+                                {% if order.status in 'pending,processing' %}
+                                <a href="{% url 'queue_status' order.id %}" class="btn btn-sm btn-primary-custom ms-1">Live Antrian</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center p-5 text-muted">
+                                <i class="bi bi-clock-history fs-1 mb-3"></i>
+                                <h5>Belum ada riwayat pesanan.</h5>
+                                <a href="{% url 'student_dashboard' %}" class="btn btn-primary-custom mt-3">Mulai Pesan</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

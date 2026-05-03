@@ -1,0 +1,562 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block page_title %}Admin - Smart Food Queue{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* =============================================
+           DESIGN TOKENS / GLOBAL VARIABLES
+        ============================================= */
+        :root {
+            --sidebar-bg: #ffffff;
+            --main-bg: #F4F7FB; /* Very soft blue */
+            --card-white: #ffffff;
+            --text-dark: #334155;
+            --text-muted: #64748b;
+            --active-pill: #f97316; /* Solid Orange */
+            --active-text: #ffffff; /* White Text */
+            --primary: #f97316;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-dark);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* =============================================
+           SIDEBAR
+        ============================================= */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background-color: var(--sidebar-bg);
+            height: 100vh;
+            border-right: 1px solid var(--border-color);
+            padding: 2.5rem 1rem 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 85px;
+            min-width: 85px;
+            padding: 2.5rem 0.5rem 1.5rem 0.5rem;
+        }
+
+        .sidebar.collapsed .nav-link span,
+        .sidebar.collapsed .nav-link .shortcut,
+        .sidebar.collapsed .brand-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            flex-direction: column;
+            padding: 0;
+            border-bottom: none;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar.collapsed .user-name {
+            display: none;
+        }
+
+        .sidebar.collapsed .toggle-sidebar-btn {
+            margin: 1rem auto 0 auto;
+        }
+
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.85rem;
+        }
+
+        .sidebar.collapsed .nav-link i {
+            font-size: 1.4rem;
+        }
+        
+        .sidebar.collapsed .nav-link.active::after {
+            display: none;
+        }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding: 0 0.5rem 1.5rem 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-avatar-initial {
+            width: 36px;
+            height: 36px;
+            background-color: #8b5cf6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-dark);
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .toggle-sidebar-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+            padding: 0 0.2rem;
+        }
+
+        .toggle-sidebar-btn:hover {
+            transform: scale(1.1);
+            color: var(--text-dark);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            overflow-y: auto;
+        }
+        
+        .nav-menu::-webkit-scrollbar { display: none; }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.75rem 1rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-link i {
+            font-size: 1.2rem;
+        }
+
+        .nav-link:hover {
+            background-color: #fff7ed;
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background-color: var(--active-pill);
+            color: var(--active-text);
+            font-weight: 600;
+        }
+
+        .nav-link.active i {
+            color: var(--active-text);
+        }
+
+        .nav-link.active::after {
+            content: "•";
+            position: absolute;
+            right: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .shortcut {
+            margin-left: auto;
+            font-size: 0.75rem;
+            background: rgba(0,0,0,0.04);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #94a3b8;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .sidebar-illustration {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 1rem;
+            margin-top: auto;
+        }
+
+        .sidebar-illustration img {
+            width: 100%;
+            max-width: 180px;
+            height: auto;
+        }
+
+        .bottom-nav {
+            margin-top: 1rem;
+        }
+
+        /* Close button (mobile only) */
+        .close-sidebar-btn {
+            display: none;
+        }
+
+        .sidebar-overlay-dynamic {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 1040;
+            cursor: pointer;
+        }
+
+        /* =============================================
+           MAIN CONTENT AREA
+        ============================================= */
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* =============================================
+           TOP HEADER (shared across all pages)
+        ============================================= */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 0.3rem;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .user-chip {
+            background: white;
+            padding: 0.4rem 1.2rem 0.4rem 0.4rem;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+        }
+
+        .user-chip img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+        }
+
+        .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .notification-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .notification-btn .badge {
+            position: absolute;
+            top: 2px;
+            right: 0px;
+            width: 10px;
+            height: 10px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            padding: 0;
+            border: 2px solid var(--main-bg);
+        }
+
+        /* =============================================
+           RESPONSIVE
+        ============================================= */
+        @media (max-width: 991px) {
+            .sidebar {
+                position: fixed !important;
+                top: 0;
+                left: -280px;
+                height: 100vh;
+                overflow-y: auto;
+                box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+                transition: left 0.3s ease;
+                z-index: 1050;
+            }
+
+            .sidebar.show {
+                left: 0 !important;
+            }
+
+            .main-content {
+                padding: 1.5rem;
+            }
+            .toggle-sidebar-btn {
+                display: none;
+            }
+
+            .close-sidebar-btn {
+                display: flex;
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                background: rgba(255, 255, 255, 0.4);
+                border: none;
+                border-radius: 8px;
+                color: var(--text-dark);
+                font-size: 1.5rem;
+                width: 36px;
+                height: 36px;
+                align-items: center;
+                justify-content: center;
+                z-index: 20;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+            .close-sidebar-btn:hover {
+                background: rgba(255, 255, 255, 0.65);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-title h1 {
+                font-size: 1.4rem;
+            }
+
+            .user-chip span {
+                display: none;
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- =============================================
+         SIDEBAR (shared, satu untuk semua halaman)
+    ============================================= -->
+    <aside class="sidebar" id="sidebar">
+        <button class="close-sidebar-btn d-lg-none" onclick="closeSidebar()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem;"><i class="bi bi-x"></i></button>
+        
+        <div class="sidebar-header" style="justify-content: space-between;">
+            <a href="#" class="brand d-flex align-items-center text-decoration-none" style="gap: 4px; overflow: hidden; white-space: nowrap;">
+                <img src="{% static 'img/logo2.png' %}" alt="Logo" style="height: 44px; border-radius: 8px;">
+                <span class="brand-text fw-bold" style="font-size: 1.3rem; color: #111827; line-height: 1.1; margin-top: 2px;">Smart<span style="color: var(--primary);">Food</span></span>
+            </a>
+            <button class="toggle-sidebar-btn d-none d-lg-block" onclick="toggleSidebar()" style="margin-left: 0;">
+                <i class="bi bi-chevron-left" id="toggleIcon"></i>
+            </button>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{% url 'admin_dashboard' %}" class="nav-link {% block nav_dashboard %}{% endblock %}">
+                    <i class="bi bi-cpu"></i> <span>Dashboard</span> <span class="shortcut">⌘D</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'admin_users' %}" class="nav-link {% block nav_users %}{% endblock %}">
+                    <i class="bi bi-person"></i> <span>Kelola User</span> <span class="shortcut">⌘U</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'admin_canteens' %}" class="nav-link {% block nav_canteens %}{% endblock %}">
+                    <i class="bi bi-building"></i> <span>Kelola Kantin</span> <span class="shortcut">⌘K</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'admin_monitoring' %}" class="nav-link {% block nav_monitoring %}{% endblock %}">
+                    <i class="bi bi-display"></i> <span>Monitoring Sistem</span> <span class="shortcut">⌘M</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'admin_logs' %}" class="nav-link {% block nav_logs %}{% endblock %}">
+                    <i class="bi bi-clock-history"></i> <span>Log Aktivitas</span> <span class="shortcut">⌘L</span>
+                </a>
+            </li>
+        </ul>
+
+        <ul class="nav-menu bottom-nav" style="flex-grow: 0; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="font-size: 0.7rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.5rem; padding-left: 1rem; letter-spacing: 1px;">SERVICES</div>
+            <li class="nav-item">
+                <a href="#" class="nav-link"><i class="bi bi-gear"></i> <span>Pengaturan</span> <span class="shortcut">⌘S</span></a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'logout' %}" class="nav-link"><i class="bi bi-box-arrow-left"></i> <span>Keluar</span></a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- =============================================
+         MAIN CONTENT (diisi oleh halaman masing-masing)
+    ============================================= -->
+    <main class="main-content">
+        <!-- HEADER -->
+        {% block top_header %}
+        <div class="top-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light d-lg-none" onclick="openSidebar()"
+                    style="border-radius: 10px; border: 1px solid var(--border-color);">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div class="header-title">
+                    <h1>{% block header_title %}Halo, Admin Utama!{% endblock %}</h1>
+                    <p>{% block header_subtitle %}{% endblock %}</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="#" class="user-chip">
+                    <img src="https://ui-avatars.com/api/?name=Admin+Utama&background=ffffff&color=1e293b&font-size=0.33"
+                        alt="Avatar">
+                    <span>Admin Utama</span>
+                </a>
+                <button class="notification-btn">
+                    <i class="bi bi-bell"></i>
+                    <span class="badge"></span>
+                </button>
+            </div>
+        </div>
+        {% endblock %}
+
+        <!-- TOAST NOTIFICATIONS -->
+        <div style="position: fixed; top: 30px; right: 30px; z-index: 1060; min-width: 300px; max-width: 400px;">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show border-0 shadow-lg rounded-4 d-flex align-items-center"
+                role="alert"
+                style="background-color: white; border-left: 5px solid {% if message.tags == 'error' %}#ef4444{% else %}#22c55e{% endif %} !important; color: #111827;">
+                <i
+                    class="bi {% if message.tags == 'error' %}bi-exclamation-triangle-fill text-danger{% else %}bi-check-circle-fill text-success{% endif %} fs-4 me-3"></i>
+                <div>{{ message }}</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- PAGE CONTENT -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Sidebar toggle (shared)
+        const sidebarEl = document.getElementById('sidebar');
+        let overlayEl = null;
+        function openSidebar() {
+            if (!overlayEl) {
+                overlayEl = document.createElement('div');
+                overlayEl.className = 'sidebar-overlay-dynamic';
+                overlayEl.addEventListener('click', closeSidebar);
+                document.body.appendChild(overlayEl);
+            }
+            sidebarEl.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            sidebarEl.classList.remove('show');
+            if (overlayEl) {
+                overlayEl.removeEventListener('click', closeSidebar);
+                overlayEl.remove();
+                overlayEl = null;
+            }
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            const toggleIcon = document.getElementById('toggleIcon');
+            sidebarEl.classList.toggle('collapsed');
+            if (sidebarEl.classList.contains('collapsed')) {
+                toggleIcon.classList.replace('bi-chevron-left', 'bi-chevron-right');
+            } else {
+                toggleIcon.classList.replace('bi-chevron-right', 'bi-chevron-left');
+            }
+        }
+        window.addEventListener('resize', () => { if (window.innerWidth >= 992) closeSidebar(); });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

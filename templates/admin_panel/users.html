@@ -1,0 +1,263 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}Kelola User - Smart Food Queue{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block header_title %}Halo, Admin Utama!{% endblock %}
+{% block header_subtitle %}Manajemen Pengguna &amp; Hak Akses{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* 4 CARDS */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    
+    .stat-card {
+        border-radius: 16px; padding: 1.5rem; position: relative;
+        border: none;
+        display: flex; flex-direction: column; height: 160px; overflow: hidden; 
+        transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer;
+    }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05); }
+    
+    .icon-box {
+        width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 255, 255, 0.7);
+        display: flex; align-items: center; justify-content: center; z-index: 2; position: relative;
+    }
+    .stat-icon { font-size: 1.1rem; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; display: flex; align-items: baseline; gap: 4px; z-index: 2; position: relative; letter-spacing: -0.5px; }
+    .stat-unit { font-size: 0.85rem; font-weight: 600; opacity: 0.9; letter-spacing: 0; }
+    .stat-title { font-size: 0.9rem; font-weight: 600; margin-top: 8px; z-index: 2; position: relative; opacity: 0.85; }
+    .chart-container-wave { position: absolute; right: 0; bottom: 0; width: 65%; height: 85px; z-index: 1; }
+
+    .card-user { background-color: #CCE3F9; }
+    .card-user .stat-icon { color: #0E66C5; } .card-user .stat-value { color: #0E66C5; } .card-user .stat-title { color: #8BAED2; }
+    .card-order { background-color: #E1F9E3; }
+    .card-order .stat-icon { color: #15A03A; } .card-order .stat-value { color: #15A03A; } .card-order .stat-title { color: #9FD0A7; }
+    .card-canteen { background-color: #FFF3DF; }
+    .card-canteen .stat-icon { color: #EC8513; } .card-canteen .stat-value { color: #EC8513; } .card-canteen .stat-title { color: #D7B891; }
+    .card-admin { background-color: #FDE0E4; }
+    .card-admin .stat-icon { color: #E64251; } .card-admin .stat-value { color: #E64251; } .card-admin .stat-title { color: #DCA8AE; }
+
+    /* SEARCH & BUTTONS */
+    .search-box { position: relative; width: 100%; max-width: 450px; }
+    .search-box input { width: 100%; padding: 0.7rem 1.2rem 0.7rem 2.8rem; border-radius: 50px; border: 1px solid #cbd5e1; font-family: 'Roboto', sans-serif; font-size: 0.95rem; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: all 0.3s; }
+    .search-box input:focus { outline: none; border-color: var(--active-pill); box-shadow: 0 0 0 3px rgba(110, 181, 168, 0.2); }
+    .search-box i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 1.1rem; }
+    .btn-add { background: var(--active-pill); color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 50px; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; box-shadow: 0 4px 15px rgba(110, 181, 168, 0.3); transition: all 0.3s; text-decoration: none; cursor: pointer; }
+    .btn-add:hover { background: #4a8b7f; color: white; transform: translateY(-2px); }
+    .btn-filter { background-color: white; color: var(--text-muted); border: 1px solid #cbd5e1; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    .btn-filter::after { display: none !important; }
+    .btn-filter:hover { transform: scale(1.1) rotate(5deg); background-color: var(--active-pill); color: white; border-color: var(--active-pill); box-shadow: 0 6px 15px rgba(110, 181, 168, 0.4); }
+    .dropdown-menu .dropdown-item.active { background-color: rgba(110, 181, 168, 0.15); color: #2F9E8F; }
+    .dropdown-menu .dropdown-item:hover { background-color: rgba(110, 181, 168, 0.08); color: var(--text-dark); }
+
+    /* TABLE */
+    .list-title { font-size: 1.8rem; font-weight: 900; color: var(--text-dark); margin: 0; }
+    .table-wrapper { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 2rem; }
+    .table-custom { width: 100%; border-collapse: collapse; }
+    .table-custom th { font-size: 0.85rem; font-weight: 900; color: #111827; text-transform: uppercase; padding: 1rem; border-bottom: 2px dashed #cbd5e1; text-align: center; }
+    .table-custom td { padding: 1.2rem 1rem; font-size: 0.95rem; font-weight: 500; color: #374151; border-bottom: 1px solid #f1f5f9; vertical-align: middle; text-align: center; }
+
+    /* BADGES */
+    .badge-role { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; color: white; }
+    .role-siswa { background-color: #3b82f6; }
+    .role-penjual { background-color: #22c55e; }
+    .role-admin { background-color: #0ea5e9; }
+    .badge-status { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; color: white; }
+    .status-aktif { background-color: #22c55e; }
+
+    /* TOGGLE SWITCH */
+    .toggle-container { display: flex; align-items: center; gap: 10px; }
+    .toggle-label { font-size: 0.85rem; font-weight: 800; }
+    .toggle-label.active { color: #111827; } .toggle-label.inactive { color: #6b7280; }
+    .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d5db; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .slider { background-color: #22c55e; }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    @media (max-width: 1400px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 991px) { .dashboard-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- 4 CARDS -->
+    <div class="dashboard-grid">
+        <div class="stat-card card-user">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-people-fill stat-icon"></i></div>
+                <div class="stat-value ms-2">{{ total_active|default:"1,250" }} <span class="stat-unit">orang</span></div>
+            </div>
+            <div class="stat-title">Total User Aktif</div>
+            <div class="chart-container-wave"><canvas id="userChart"></canvas></div>
+        </div>
+        <div class="stat-card card-order">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-person-badge-fill stat-icon"></i></div>
+                <div class="stat-value ms-2">{{ total_siswa|default:"35" }} <span class="stat-unit">orang</span></div>
+            </div>
+            <div class="stat-title">Total Siswa</div>
+            <div class="chart-container-wave"><canvas id="siswaChart"></canvas></div>
+        </div>
+        <div class="stat-card card-canteen">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-shop stat-icon"></i></div>
+                <div class="stat-value ms-2">{{ total_penjual|default:"12" }} <span class="stat-unit">orang</span></div>
+            </div>
+            <div class="stat-title">Total Penjual</div>
+            <div class="chart-container-wave"><canvas id="penjualChart"></canvas></div>
+        </div>
+        <div class="stat-card card-admin">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-shield-lock-fill stat-icon"></i></div>
+                <div class="stat-value ms-2">{{ total_admin|default:"3" }} <span class="stat-unit">orang</span></div>
+            </div>
+            <div class="stat-title">Total Admin</div>
+            <div class="chart-container-wave"><canvas id="adminChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- TABLE DATA -->
+    <div class="table-wrapper">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                <h2 class="list-title mb-0" style="font-size: 1.5rem; white-space: nowrap;">Daftar Pengguna</h2>
+                <form method="GET" class="search-box mb-0 flex-grow-1">
+                    <input type="hidden" name="role" value="{{ role_filter }}">
+                    <i class="bi bi-search"></i>
+                    <input type="text" name="search" placeholder="Cari nama atau email..." value="{{ search }}" onchange="this.form.submit()">
+                </form>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-filter dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Filter Role">
+                        <i class="bi bi-funnel-fill"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-4 border-0 mt-2 p-2" aria-labelledby="filterDropdown" style="font-size: 0.95rem; min-width: 200px;">
+                        <li><a class="dropdown-item rounded-3 mb-1 {% if not role_filter %}active fw-bold{% endif %}" href="?role=&search={{ search }}"><i class="bi bi-grid-fill me-2 opacity-50"></i>Semua Role</a></li>
+                        <li><a class="dropdown-item rounded-3 mb-1 {% if role_filter == 'student' %}active fw-bold{% endif %}" href="?role=student&search={{ search }}"><i class="bi bi-person-badge me-2 opacity-50"></i>Siswa</a></li>
+                        <li><a class="dropdown-item rounded-3 mb-1 {% if role_filter == 'vendor' %}active fw-bold{% endif %}" href="?role=vendor&search={{ search }}"><i class="bi bi-shop me-2 opacity-50"></i>Penjual</a></li>
+                        <li><a class="dropdown-item rounded-3 {% if role_filter == 'sysadmin' %}active fw-bold{% endif %}" href="?role=sysadmin&search={{ search }}"><i class="bi bi-shield-lock me-2 opacity-50"></i>Admin Sistem</a></li>
+                    </ul>
+                </div>
+                <button type="button" class="btn-add mb-0" data-bs-toggle="modal" data-bs-target="#addUserModal" style="padding: 0.6rem 1.2rem;">
+                    <i class="bi bi-plus-lg me-1"></i> PENGGUNA BARU
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom" style="min-width: 800px;">
+                <thead>
+                    <tr>
+                        <th>USER ID <i class="bi bi-chevron-expand"></i></th>
+                        <th>NAMA</th>
+                        <th>EMAIL</th>
+                        <th>ROLE</th>
+                        <th>KONFIRMASI</th>
+                        <th>AKTIFKAN / NONAKTIFKAN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr data-url="{% url 'admin_user_profile' u.id %}" onclick="if(!event.target.closest('form')) window.location.href=this.dataset.url;" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.backgroundColor='rgba(110, 181, 168, 0.05)'" onmouseout="this.style.backgroundColor=''">
+                        <td class="fw-bold">{{ u.id|stringformat:"06d" }}</td>
+                        <td class="fw-bold text-dark">{{ u.username }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            {% if u.role == 'student' %}<span class="badge-role role-siswa">Siswa</span>
+                            {% elif u.role == 'vendor' %}<span class="badge-role role-penjual">Penjual</span>
+                            {% elif u.role == 'sysadmin' %}<span class="badge-role role-admin">Admin</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_approved %}
+                                <span class="badge-status status-aktif"><i class="bi bi-check-circle-fill me-1"></i>Dikonfirmasi</span>
+                            {% else %}
+                                <span class="badge-status" style="background-color: #f59e0b; color: white;"><i class="bi bi-hourglass-split me-1"></i>Menunggu</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if request.user != u %}
+                            <form action="{% url 'admin_toggle_user' u.id %}" method="POST" class="m-0 p-0 d-flex justify-content-center">
+                                {% csrf_token %}
+                                <div class="toggle-container">
+                                    <label class="switch">
+                                        <input type="checkbox" onchange="this.form.submit()" {% if u.is_active %}checked{% endif %}>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="toggle-label {% if u.is_active %}active{% else %}inactive{% endif %}" style="width: 70px; text-align: left;">
+                                        {% if u.is_active %}AKTIF{% else %}NONAKTIF{% endif %}
+                                    </span>
+                                </div>
+                            </form>
+                            {% else %}
+                                <span class="text-muted small fw-bold">Sedang Login</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-3"></i>Tidak ada data pengguna ditemukan.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH PENGGUNA -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="addUserModalLabel">Tambah Pengguna Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{% url 'admin_users' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="modal-body pt-4">
+                        <div class="mb-3"><label class="form-label fw-bold text-muted small">Username</label><input type="text" name="username" class="form-control rounded-3" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold text-muted small">Email</label><input type="email" name="email" class="form-control rounded-3" required></div>
+                        <div class="mb-3"><label class="form-label fw-bold text-muted small">Role</label>
+                            <select name="role" class="form-select rounded-3" required>
+                                <option value="student">Siswa</option>
+                                <option value="vendor">Penjual</option>
+                                <option value="sysadmin">Admin Sistem</option>
+                            </select>
+                        </div>
+                        <div class="mb-3"><label class="form-label fw-bold text-muted small">Password</label><input type="password" name="password" class="form-control rounded-3" required></div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn rounded-pill px-4" style="background: var(--active-pill); color: white; border: none;">Simpan Pengguna</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    Chart.defaults.font.family = "'Roboto', sans-serif";
+    const cardTooltip = { backgroundColor: 'rgba(17, 24, 39, 0.95)', titleFont: { size: 14, weight: 'bold' }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 8, displayColors: false };
+    const createGradient = (ctx, colorStart, colorEnd) => {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 100);
+        gradient.addColorStop(0, colorStart); gradient.addColorStop(1, colorEnd);
+        return gradient;
+    };
+    const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } };
+
+    const userCtx = document.getElementById('userChart').getContext('2d');
+    new Chart(userCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Aktif', data: [5, 12, 8, 20, 15, 30, 45], borderColor: '#0E66C5', backgroundColor: createGradient(userCtx, 'rgba(14,102,197,0.2)', 'rgba(14,102,197,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+
+    const siswaCtx = document.getElementById('siswaChart').getContext('2d');
+    new Chart(siswaCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Siswa', data: [15, 25, 20, 35, 30, 45, 60], borderColor: '#15A03A', backgroundColor: createGradient(siswaCtx, 'rgba(21,160,58,0.2)', 'rgba(21,160,58,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+
+    const penjualCtx = document.getElementById('penjualChart').getContext('2d');
+    new Chart(penjualCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Penjual', data: [5, 15, 10, 20, 18, 25, 35], borderColor: '#EC8513', backgroundColor: createGradient(penjualCtx, 'rgba(236,133,19,0.2)', 'rgba(236,133,19,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+
+    const adminCtx = document.getElementById('adminChart').getContext('2d');
+    new Chart(adminCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Admin', data: [2, 5, 3, 8, 6, 10, 15], borderColor: '#E64251', backgroundColor: createGradient(adminCtx, 'rgba(230,66,81,0.2)', 'rgba(230,66,81,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+</script>
+{% endblock %}

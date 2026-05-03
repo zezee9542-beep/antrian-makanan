@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Food Queue - Pesanan Masuk{% endblock %}
+{% block page_title %}Pesanan Kantin: <span>{{ canteen.name }}</span>{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex gap-2 overflow-auto pb-2" style="scrollbar-width: none;">
+        <a href="{% url 'vendor_orders' %}" class="btn {% if not status_filter %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">Semua</a>
+        <a href="?status=pending" class="btn {% if status_filter == 'pending' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
+            <i class="bi bi-hourglass text-warning"></i> Menunggu
+        </a>
+        <a href="?status=processing" class="btn {% if status_filter == 'processing' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
+            <i class="bi bi-fire text-info"></i> Diproses
+        </a>
+        <a href="?status=done" class="btn {% if status_filter == 'done' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
+            <i class="bi bi-check2 text-success"></i> Selesai
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for order in orders %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 position-relative {% if order.status == 'pending' %}border-warning{% elif order.status == 'processing' %}border-info{% endif %}">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="queue-number-big fs-1">#{{ order.queue_number }}</div>
+                    <span class="badge status-badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
+                </div>
+                
+                <div class="fw-bold fs-5 text-white mb-1">{{ order.user.username }}</div>
+                <div class="text-muted small mb-3"><i class="bi bi-clock"></i> {{ order.created_at|date:"H:i" }}</div>
+                
+                <div class="bg-surface rounded-custom p-3 mb-3 border-custom" style="max-height: 120px; overflow-y: auto;">
+                    <ul class="list-unstyled m-0 small">
+                        {% for item in order.items.all %}
+                        <li class="d-flex justify-content-between mb-1">
+                            <span><span class="fw-bold">{{ item.quantity }}x</span> {{ item.menu_item.name }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% if order.notes %}
+                    <div class="mt-2 pt-2 border-top border-custom text-warning"><i class="bi bi-chat-quote-fill"></i> {{ order.notes }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                    <div class="fw-bold text-primary fs-5">Rp {{ order.total_price }}</div>
+                    <a href="{% url 'vendor_order_detail' order.id %}" class="btn btn-sm btn-outline-primary-custom">Update Status</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card card-body text-center p-5 text-muted">
+            <i class="bi bi-inbox fs-1 mb-3"></i>
+            <h5>Belum ada pesanan dengan status ini.</h5>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto refresh every 30 seconds to catch new orders
+    setTimeout(() => window.location.reload(), 30000);
+</script>
+{% endblock %}

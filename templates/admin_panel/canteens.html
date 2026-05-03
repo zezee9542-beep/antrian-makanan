@@ -1,0 +1,505 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block page_title %}Kelola Kantin - Smart Food Queue{% endblock %}
+{% block nav_canteens %}active{% endblock %}
+{% block header_title %}Halo, Admin Utama!{% endblock %}
+{% block header_subtitle %}Manajemen Kantin &amp; Penjual{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── 4 STAT CARDS ── */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        border-radius: 16px;
+        padding: 1.5rem;
+        position: relative;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        height: 160px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+    }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+
+    .icon-box {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: rgba(255,255,255,0.7);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 2; position: relative;
+    }
+    .stat-icon { font-size: 1.1rem; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; display: flex; align-items: baseline; gap: 4px; z-index: 2; position: relative; letter-spacing: -0.5px; }
+    .stat-unit  { font-size: 0.85rem; font-weight: 600; opacity: 0.9; letter-spacing: 0; }
+    .stat-title { font-size: 0.9rem; font-weight: 600; margin-top: 8px; z-index: 2; position: relative; opacity: 0.85; }
+    .chart-container-wave { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 90px; z-index: 1; }
+
+    /* Card colours – teal / green / yellow-gold / blue */
+    .card-total   { background-color: #D4EEE9; }
+    .card-total   .stat-icon  { color: #1a7a6a; }
+    .card-total   .stat-value { color: #1a7a6a; }
+    .card-total   .stat-title { color: #5a9c8e; }
+
+    .card-aktif   { background-color: #E0F5E6; }
+    .card-aktif   .stat-icon  { color: #15A03A; }
+    .card-aktif   .stat-value { color: #15A03A; }
+    .card-aktif   .stat-title { color: #9FD0A7; }
+
+    .card-revenue { background-color: #FFF3DF; }
+    .card-revenue .stat-icon  { color: #EC8513; }
+    .card-revenue .stat-value { color: #EC8513; }
+    .card-revenue .stat-title { color: #D7B891; }
+
+    .card-rating  { background-color: #E5F0FB; }
+    .card-rating  .stat-icon  { color: #0E66C5; }
+    .card-rating  .stat-value { color: #0E66C5; }
+    .card-rating  .stat-title { color: #8BAED2; }
+
+    /* ── TABLE WRAPPER ── */
+    .table-wrapper {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+    }
+    .list-title { font-size: 1.5rem; font-weight: 900; color: var(--text-dark); margin: 0; white-space: nowrap; }
+
+    /* ── SEARCH BOX ── */
+    .search-box { position: relative; width: 100%; max-width: 400px; }
+    .search-box input {
+        width: 100%; padding: 0.7rem 1.2rem 0.7rem 2.8rem;
+        border-radius: 50px; border: 1px solid #cbd5e1;
+        font-family: 'Roboto', sans-serif; font-size: 0.95rem;
+        background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: all 0.3s;
+    }
+    .search-box input:focus { outline: none; border-color: var(--active-pill); box-shadow: 0 0 0 3px rgba(110,181,168,0.2); }
+    .search-box i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 1.1rem; }
+
+    /* ── BUTTONS ── */
+    .btn-add {
+        background: var(--active-pill); color: white; border: none;
+        padding: 0.7rem 1.5rem; border-radius: 50px;
+        font-weight: 700; font-size: 0.9rem; text-transform: uppercase;
+        box-shadow: 0 4px 15px rgba(110,181,168,0.3); transition: all 0.3s; cursor: pointer;
+    }
+    .btn-add:hover { background: #4a8b7f; color: white; transform: translateY(-2px); }
+
+    .btn-filter {
+        background-color: white; color: var(--text-muted);
+        border: 1px solid #cbd5e1; width: 42px; height: 42px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: all 0.3s; cursor: pointer;
+    }
+    .btn-filter::after { display: none !important; }
+    .btn-filter:hover { transform: scale(1.1) rotate(5deg); background-color: var(--active-pill); color: white; border-color: var(--active-pill); }
+    .dropdown-menu .dropdown-item.active { background-color: rgba(110,181,168,0.15); color: #2F9E8F; }
+    .dropdown-menu .dropdown-item:hover  { background-color: rgba(110,181,168,0.08); }
+
+    /* ── TABLE ── */
+    .table-custom { width: 100%; border-collapse: collapse; }
+    .table-custom th {
+        font-size: 0.85rem; font-weight: 700; color: #64748b;
+        padding: 0.85rem 1.2rem; border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .table-custom td {
+        padding: 1rem 1.2rem; font-size: 0.92rem; font-weight: 500;
+        color: #374151; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+        white-space: nowrap;
+    }
+    .canteen-name  { font-weight: 800; color: #111827; }
+    /* Action button group */
+    .action-btn {
+        width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+        background: #f8fafc; display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.18s; color: #64748b; padding: 0;
+        font-size: 0.85rem; flex-shrink: 0;
+    }
+    .action-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.10); }
+    .action-btn.view:hover  { background: #e0f5fb; color: #0284c7; border-color: #bae6fd; }
+    .action-btn.edit:hover  { background: #fef9c3; color: #ca8a04; border-color: #fde68a; }
+    .action-btn.power.on:hover { background: #dcfce7; color: #16a34a; border-color: #bbf7d0; }
+    .action-btn.power.off:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+    .action-btn.del:hover   { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+
+    @media (max-width: 1400px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px)  { .dashboard-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <!-- 4 STAT CARDS -->
+    <div class="dashboard-grid">
+
+        <!-- Card 1: Total Kantin (Teal) -->
+        <div class="stat-card card-total">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-building stat-icon"></i></div>
+                <div class="stat-value ms-2">{{ total_kantin|default:"32" }} <span class="stat-unit">kantin</span></div>
+            </div>
+            <div class="stat-title">Total Kantin</div>
+            <div class="chart-container-wave"><canvas id="chartTotal"></canvas></div>
+        </div>
+
+        <!-- Card 2: Kantin Aktif (Green) -->
+        <div class="stat-card card-aktif">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-check-circle-fill stat-icon"></i></div>
+                <div class="stat-value ms-2">{{ total_aktif|default:"28" }} <span class="stat-unit">aktif</span></div>
+            </div>
+            <div class="stat-title">Kantin Aktif</div>
+            <div class="chart-container-wave"><canvas id="chartAktif"></canvas></div>
+        </div>
+
+        <!-- Card 3: Revenue (Yellow) -->
+        <div class="stat-card card-revenue">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-cash-coin stat-icon"></i></div>
+                <div class="stat-value ms-2">Rp 25.5 <span class="stat-unit">jt</span></div>
+            </div>
+            <div class="stat-title">Revenue Hari Ini</div>
+            <div class="chart-container-wave"><canvas id="chartRevenue"></canvas></div>
+        </div>
+
+        <!-- Card 4: Rating (Blue) -->
+        <div class="stat-card card-rating">
+            <div class="d-flex align-items-center mb-1">
+                <div class="icon-box"><i class="bi bi-star-fill stat-icon"></i></div>
+                <div class="stat-value ms-2">4.6 <span class="stat-unit"><i class="bi bi-star-fill" style="font-size:0.75rem;"></i></span></div>
+            </div>
+            <div class="stat-title">Rata-rata Rating</div>
+            <div class="chart-container-wave"><canvas id="chartRating"></canvas></div>
+        </div>
+    </div>
+
+    <!-- TABLE SECTION -->
+    <div class="table-wrapper">
+        <!-- Action Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <!-- Kiri: judul + search -->
+            <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                <h2 class="list-title">Daftar Kantin</h2>
+                <form method="GET" action="{% url 'admin_canteens' %}" class="search-box mb-0 flex-grow-1">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    <i class="bi bi-search"></i>
+                    <input type="text" name="search" placeholder="Cari kantin, pemilik..." value="{{ search }}" onchange="this.form.submit()">
+                </form>
+            </div>
+
+            <!-- Kanan: filter + tambah -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-filter dropdown-toggle" type="button" id="filterDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false" title="Filter Status">
+                        <i class="bi bi-funnel-fill"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm rounded-4 border-0 mt-2 p-2"
+                        aria-labelledby="filterDropdown" style="font-size: 0.95rem; min-width: 180px;">
+                        <li>
+                            <a class="dropdown-item rounded-3 mb-1 {% if not status_filter %}active fw-bold{% endif %}"
+                               href="?status=&search={{ search }}">
+                                <i class="bi bi-grid-fill me-2 opacity-50"></i>Semua Kantin
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded-3 mb-1 {% if status_filter == 'aktif' %}active fw-bold{% endif %}"
+                               href="?status=aktif&search={{ search }}">
+                                <i class="bi bi-check-circle me-2 opacity-50"></i>Aktif
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded-3 {% if status_filter == 'nonaktif' %}active fw-bold{% endif %}"
+                               href="?status=nonaktif&search={{ search }}">
+                                <i class="bi bi-x-circle me-2 opacity-50"></i>Nonaktif
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#addCanteenModal">
+                    <i class="bi bi-plus-lg me-1"></i> KANTIN BARU
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+            <table class="table-custom" style="min-width: 780px;">
+                <thead>
+                    <tr>
+                        <th class="text-center">No.</th>
+                        <th class="text-center">Nama Kantin</th>
+                        <th class="text-center">Pemilik</th>
+                        <th class="text-center">Lokasi</th>
+                        <th class="text-center">Jumlah Menu</th>
+                        <th class="text-center">Total Pesanan</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in canteens %}
+                    <tr style="transition: 0.2s;" onmouseover="this.style.backgroundColor='rgba(110,181,168,0.05)'" onmouseout="this.style.backgroundColor=''">
+                        <td class="text-center text-muted fw-semibold" style="font-size:0.85rem;">{{ forloop.counter }}</td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center gap-3">
+                                <img src="{% if c.image %}{{ c.image.url }}{% else %}https://ui-avatars.com/api/?name={{ c.name|urlencode }}&background=e0f5e6&color=15a03a&rounded=true&bold=true{% endif %}"
+                                     alt="Logo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                                <span class="canteen-name">{{ c.name }}</span>
+                            </div>
+                        </td>
+                        <td class="text-center text-muted">{{ c.vendor.username }}</td>
+                        <td class="text-center text-muted">
+                            <i class="bi bi-geo-alt me-1"></i>{{ c.location|default:"-" }}
+                        </td>
+                        <td class="text-center fw-bold">{{ c.menu_count|default:"0" }}</td>
+                        <td class="text-center fw-bold">{{ c.order_count|default:"0" }}</td>
+                        <td class="text-center">
+                            {% if c.is_active %}
+                                <span class="badge rounded-pill px-3 py-2"
+                                      style="background:rgba(21,160,58,0.12);color:#15A03A;font-weight:600;font-size:0.8rem;">Aktif</span>
+                            {% else %}
+                                <span class="badge rounded-pill px-3 py-2"
+                                      style="background:rgba(220,38,38,0.10);color:#dc2626;font-weight:600;font-size:0.8rem;">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center align-items-center">
+                                <!-- View -->
+                                <a href="{% url 'admin_canteen_detail' c.id %}" class="action-btn view" title="Lihat Detail" style="text-decoration:none;">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <!-- Edit -->
+                                <button class="action-btn edit" title="Edit Kantin"
+                                        onclick="openEditModal({{ c.id }},'{{ c.name|escapejs }}','{{ c.location|default:''|escapejs }}','{{ c.description|default:''|escapejs }}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <!-- Toggle status -->
+                                <form action="{% url 'admin_canteens' %}" method="POST" class="m-0 p-0 d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="toggle_id" value="{{ c.id }}">
+                                    <button type="submit" class="action-btn power {% if c.is_active %}on{% else %}off{% endif %}"
+                                            title="{% if c.is_active %}Nonaktifkan{% else %}Aktifkan{% endif %}">
+                                        <i class="bi bi-power"></i>
+                                    </button>
+                                </form>
+                                <!-- Delete -->
+                                <button class="action-btn del" title="Hapus Kantin"
+                                        onclick="openDeleteModal({{ c.id }},'{{ c.name|escapejs }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            {% if search %}
+                                Tidak ada kantin ditemukan untuk "<strong>{{ search }}</strong>".
+                            {% else %}
+                                Belum ada data kantin.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL: TAMBAH KANTIN -->
+    <div class="modal fade" id="addCanteenModal" tabindex="-1" aria-labelledby="addCanteenModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="addCanteenModalLabel">Tambah Kantin Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{% url 'admin_canteens' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    <div class="modal-body pt-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Nama Kantin</label>
+                            <input type="text" name="name" class="form-control rounded-3" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Pemilik (Vendor ID)</label>
+                            <input type="number" name="vendor_id" class="form-control rounded-3" placeholder="ID User dengan role Vendor" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Lokasi</label>
+                            <input type="text" name="location" class="form-control rounded-3" placeholder="Contoh: Lantai 1, Blok A">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Deskripsi (opsional)</label>
+                            <textarea name="description" class="form-control rounded-3" rows="2" placeholder="Deskripsi singkat kantin..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn rounded-pill px-4"
+                                style="background: var(--active-pill); color: white; border: none;">Simpan Kantin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT KANTIN -->
+    <div class="modal fade" id="editCanteenModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">Edit Kantin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{% url 'admin_canteens' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="canteen_id" id="editCanteenId">
+                    <div class="modal-body pt-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Nama Kantin</label>
+                            <input type="text" name="name" id="editName" class="form-control rounded-3" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Lokasi</label>
+                            <input type="text" name="location" id="editLocation" class="form-control rounded-3">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Deskripsi</label>
+                            <textarea name="description" id="editDescription" class="form-control rounded-3" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn rounded-pill px-4"
+                                style="background:#f59e0b;color:white;border:none;">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: HAPUS KANTIN -->
+    <div class="modal fade" id="deleteCanteenModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Hapus Kantin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Apakah Anda yakin ingin menghapus kantin <strong id="deleteCanteenName"></strong>? Tindakan ini tidak bisa dibatalkan.</p>
+                </div>
+                <form action="{% url 'admin_canteens' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="canteen_id" id="deleteCanteenId">
+                    <div class="modal-footer border-top-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger rounded-pill px-4">Ya, Hapus</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    Chart.defaults.font.family = "'Roboto', sans-serif";
+
+    const cardTooltip = {
+        backgroundColor: 'rgba(17,24,39,0.95)',
+        titleFont: { size: 13, weight: 'bold' },
+        bodyFont: { size: 12 },
+        padding: 10, cornerRadius: 8, displayColors: false
+    };
+
+    // Buat gradient sesuai warna card
+    const makeGrad = (ctx, colorStart, colorEnd) => {
+        const g = ctx.createLinearGradient(0, 0, 0, 100);
+        g.addColorStop(0, colorStart);
+        g.addColorStop(1, colorEnd);
+        return g;
+    };
+
+    const lineOpts = {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { bottom: -10, left: -10, right: -10 } },
+        plugins: { legend: { display: false }, tooltip: cardTooltip },
+        scales: { x: { display: false }, y: { display: false, min: 0 } },
+        interaction: { mode: 'index', intersect: false }
+    };
+
+    const labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul', 'Ags'];
+
+    // Card 1 – Teal
+    const c1 = document.getElementById('chartTotal').getContext('2d');
+    new Chart(c1, { type: 'line', data: { labels, datasets: [{
+        data: [15, 35, 18, 40, 20, 45, 25, 50],
+        borderColor: '#1a7a6a',
+        backgroundColor: makeGrad(c1, 'rgba(26,122,106,0.35)', 'rgba(26,122,106,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // Card 2 – Green
+    const c2 = document.getElementById('chartAktif').getContext('2d');
+    new Chart(c2, { type: 'line', data: { labels, datasets: [{
+        data: [20, 10, 30, 15, 35, 20, 40, 25],
+        borderColor: '#15A03A',
+        backgroundColor: makeGrad(c2, 'rgba(21,160,58,0.35)', 'rgba(21,160,58,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // Card 3 – Orange/Yellow
+    const c3 = document.getElementById('chartRevenue').getContext('2d');
+    new Chart(c3, { type: 'line', data: { labels, datasets: [{
+        data: [10, 25, 12, 30, 15, 35, 20, 40],
+        borderColor: '#EC8513',
+        backgroundColor: makeGrad(c3, 'rgba(236,133,19,0.35)', 'rgba(236,133,19,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // Card 4 – Blue
+    const c4 = document.getElementById('chartRating').getContext('2d');
+    new Chart(c4, { type: 'line', data: { labels, datasets: [{
+        data: [3.5, 4.8, 3.8, 4.9, 4.0, 4.7, 4.2, 5.0],
+        borderColor: '#0E66C5',
+        backgroundColor: makeGrad(c4, 'rgba(14,102,197,0.35)', 'rgba(14,102,197,0.05)'),
+        borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 6
+    }]}, options: lineOpts });
+
+    // ── MODAL HELPERS ──────────────────────────────────────
+    const editModal   = new bootstrap.Modal(document.getElementById('editCanteenModal'));
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteCanteenModal'));
+
+    function openEditModal(id, name, location, desc) {
+        document.getElementById('editCanteenId').value      = id;
+        document.getElementById('editName').value           = name;
+        document.getElementById('editLocation').value       = location;
+        document.getElementById('editDescription').value    = desc;
+        editModal.show();
+    }
+
+    function openDeleteModal(id, name) {
+        document.getElementById('deleteCanteenId').value    = id;
+        document.getElementById('deleteCanteenName').textContent = name;
+        deleteModal.show();
+    }
+</script>
+{% endblock %}
