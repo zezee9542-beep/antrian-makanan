@@ -741,9 +741,12 @@
                     <button class="qty-btn"><i class="bi bi-plus"></i></button>
                 </div>
                 
-                <button class="add-to-cart-btn" onclick="window.location.href='{% url 'cart' %}'">
-                    <i class="bi bi-cart3"></i> Tambah ke Keranjang
-                </button>
+                <form method="POST" action="{% url 'add_to_cart' item.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="add-to-cart-btn">
+                        <i class="bi bi-cart3"></i> Tambah ke Keranjang
+                    </button>
+                </form>
                 
                 <div class="guarantee-note mt-3">
                     <span><i class="bi bi-shield-check"></i> Pesanan aman & dijamin sampai</span>
@@ -773,9 +776,12 @@
                 <span>Total</span>
                 <h4>Rp {{ item.price|floatformat:0 }}</h4>
             </div>
-            <button class="cart-btn-bottom" onclick="window.location.href='{% url 'cart' %}'">
-                <i class="bi bi-cart3"></i> Lihat Keranjang (3)
-            </button>
+            <form method="POST" action="{% url 'add_to_cart' item.id %}" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="cart-btn-bottom">
+                    <i class="bi bi-cart3"></i> Tambah ke Keranjang
+                </button>
+            </form>
         </div>
     </div>
 

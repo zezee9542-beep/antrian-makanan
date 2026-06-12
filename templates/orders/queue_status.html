@@ -1,133 +1,447 @@
-{% extends 'base.html' %}
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
 
-{% block title %}Smart Food Queue - Antrian #{{ order.queue_number }}{% endblock %}
-{% block page_title %}Status Pesanan{% endblock %}
+{% block title %}Antrian #{{ order.queue_number }} - {{ order.canteen.name }}{% endblock %}
+{% block nav_status_antrian %}active{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        
-        <!-- Queue Display Card -->
-        <div class="card card-glass text-center p-5 mb-4 position-relative overflow-hidden">
-            <div class="position-absolute top-0 end-0 p-3">
-                <span class="badge status-badge badge-{{ order.status }}" id="statusBadgeDisplay">
-                    {{ order.get_status_display }}
-                </span>
+<style>
+    /* ── Header Card ── */
+    .q-header-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem 1.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
+        margin-bottom: 0;
+        position: relative;
+        overflow: visible;
+    }
+    .back-icon-btn {
+        width: 38px; height: 38px;
+        background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #64748b; text-decoration: none; font-size: 1.1rem;
+        transition: all 0.2s; flex-shrink: 0; margin-right: 1rem;
+    }
+    .back-icon-btn:hover { background: #fff7ed; color: #ff5e00; border-color: #ffedd5; transform: translateX(-3px); }
+    .q-header-illustration {
+        height: calc(100% + 20px); max-height: 120px;
+        object-fit: contain; margin-left: 1rem;
+        margin-top: -20px; margin-bottom: -10px;
+        filter: drop-shadow(0 8px 15px rgba(255,94,0,0.2));
+        flex-shrink: 0;
+    }
+
+    /* ── Content ── */
+    .q-content { padding: 1.5rem 0 2rem; }
+    .q-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+    @media (max-width: 992px) { .q-grid { grid-template-columns: 1fr; } }
+
+    /* ── Left: Big Queue Card ── */
+    .queue-big-card {
+        background: white; border-radius: 16px; border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        padding: 2.5rem 2rem; text-align: center;
+        position: sticky; top: 1rem;
+    }
+    .status-pill {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.4rem 1.2rem; border-radius: 50px;
+        font-weight: 700; font-size: 0.85rem; margin-bottom: 1.5rem;
+    }
+    .status-pending { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+    .status-processing { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .status-done { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+    .status-cancelled { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
+    .queue-number-circle {
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff5e00, #ff8c00);
+        box-shadow: 0 12px 40px rgba(255,94,0,0.35);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        margin: 0 auto 1.5rem;
+        animation: pulse-ring 2s infinite;
+    }
+    .queue-number-circle .label {
+        font-size: 0.75rem; font-weight: 700;
+        color: rgba(255,255,255,0.8); letter-spacing: 1px; margin-bottom: 0.1rem;
+    }
+    .queue-number-circle h1 {
+        font-size: 3.5rem; font-weight: 900;
+        color: white; line-height: 1; margin: 0;
+    }
+    @keyframes pulse-ring {
+        0% { box-shadow: 0 12px 40px rgba(255,94,0,0.35); }
+        50% { box-shadow: 0 12px 55px rgba(255,94,0,0.55), 0 0 0 12px rgba(255,94,0,0.08); }
+        100% { box-shadow: 0 12px 40px rgba(255,94,0,0.35); }
+    }
+
+    .queue-canteen-name {
+        font-weight: 800; font-size: 1.1rem; color: #0f172a; margin-bottom: 0.3rem;
+    }
+    .queue-total { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    .live-info-box {
+        background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;
+    }
+    .live-info-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.85rem 1.2rem;
+    }
+    .live-info-row:not(:last-child) { border-bottom: 1px solid #f1f5f9; }
+    .live-info-row .label { color: #64748b; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+    .live-info-row .value { font-weight: 800; font-size: 1rem; color: #0f172a; }
+    .live-info-row .value.orange { color: #ff5e00; }
+    .live-info-row .value.green { color: #16a34a; }
+    .live-info-row .value.blue { color: #2563eb; }
+
+    /* Done / Cancelled state */
+    .done-banner {
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        border-radius: 12px; padding: 1.5rem; margin-top: 1rem;
+        color: white; text-align: center; display: none;
+    }
+    .done-banner i { font-size: 2.5rem; margin-bottom: 0.5rem; display: block; }
+    .done-banner h5 { font-weight: 800; margin-bottom: 0.3rem; }
+    .done-banner p { opacity: 0.9; margin: 0; font-size: 0.9rem; }
+    .cancelled-banner {
+        background: #fee2e2; border: 1px solid #fecaca;
+        border-radius: 12px; padding: 1.5rem; margin-top: 1rem;
+        color: #991b1b; text-align: center; display: none;
+    }
+
+    /* ── Right Stack ── */
+    /* Stepper */
+    .stepper-card {
+        background: white; border-radius: 14px; border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        padding: 1.5rem 2rem; margin-bottom: 1.2rem;
+        display: flex; justify-content: space-between; align-items: center;
+        position: relative;
+    }
+    .stepper-line {
+        position: absolute; top: 50%; left: 15%; right: 15%;
+        border-top: 2px dashed #e2e8f0; z-index: 1;
+    }
+    .step-item {
+        position: relative; z-index: 2;
+        display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+        background: white; padding: 0 0.75rem;
+    }
+    .step-icon {
+        width: 44px; height: 44px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: #f1f5f9; border: 2px solid #e2e8f0;
+        color: #94a3b8; font-size: 1.1rem; transition: all 0.4s;
+    }
+    .step-text { font-size: 0.78rem; font-weight: 700; color: #94a3b8; transition: color 0.4s; }
+    .step-item.active .step-icon {
+        background: linear-gradient(135deg, #ff5e00, #ff8c00);
+        border-color: #ff5e00; color: white;
+        box-shadow: 0 4px 15px rgba(255,94,0,0.3);
+    }
+    .step-item.active .step-text { color: #ff5e00; }
+    .step-item.done .step-icon {
+        background: #dcfce7; border-color: #16a34a; color: #16a34a;
+    }
+    .step-item.done .step-text { color: #16a34a; }
+
+    /* ETA Box */
+    .eta-card {
+        background: white; border-radius: 14px; border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        padding: 1.2rem 1.5rem; margin-bottom: 1.2rem;
+        display: flex; align-items: center; gap: 1.2rem;
+    }
+    .eta-icon {
+        width: 52px; height: 52px; border-radius: 50%;
+        background: linear-gradient(135deg, #ff5e00, #ff8c00);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 1.4rem; flex-shrink: 0;
+        box-shadow: 0 4px 15px rgba(255,94,0,0.25); transition: background 0.4s;
+    }
+    .eta-label { font-size: 0.82rem; color: #64748b; font-weight: 600; margin-bottom: 0.2rem; }
+    .eta-value { font-size: 1.5rem; font-weight: 900; color: #0f172a; transition: color 0.4s; }
+
+    /* Order Items */
+    .items-card {
+        background: white; border-radius: 14px; border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); padding: 1.5rem;
+    }
+    .items-card h5 {
+        font-weight: 800; font-size: 0.95rem; color: #0f172a;
+        margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .items-card h5 i { color: #ff5e00; }
+    .item-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.7rem 0; border-bottom: 1px solid #f8fafc;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-row .item-left { display: flex; align-items: center; gap: 0.7rem; }
+    .item-qty {
+        background: #fff7ed; color: #ff5e00; border: 1px solid #ffedd5;
+        padding: 0.2rem 0.6rem; border-radius: 6px;
+        font-weight: 800; font-size: 0.82rem;
+    }
+    .item-name { font-weight: 700; color: #0f172a; font-size: 0.9rem; }
+    .item-subtotal { font-weight: 800; color: #0f172a; font-size: 0.9rem; }
+    .items-total-row {
+        display: flex; justify-content: space-between;
+        margin-top: 0.8rem; padding-top: 0.8rem; border-top: 2px dashed #e2e8f0;
+    }
+    .items-total-row span:first-child { font-weight: 700; color: #64748b; }
+    .items-total-row span:last-child { font-weight: 900; color: #ff5e00; font-size: 1.1rem; }
+
+    /* Action Buttons */
+    .btn-history {
+        width: 100%; margin-top: 1rem;
+        background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 0.8rem; font-weight: 700; color: #64748b; font-size: 0.9rem;
+        text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .btn-history:hover { background: #fff7ed; color: #ff5e00; border-color: #ffedd5; }
+
+    /* Live indicator dot */
+    .live-dot {
+        width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
+        display: inline-block; margin-right: 0.4rem;
+        animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+
+<!-- Header Card -->
+<div class="q-header-card">
+    <a href="{% url 'order_history' %}" class="back-icon-btn" title="Riwayat Pesanan">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div style="display:flex;align-items:center;gap:1.2rem;flex:1;">
+        <div style="width:45px;height:45px;background:#fff7ed;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#ff5e00;border:1px solid #ffedd5;flex-shrink:0;">
+            <i class="bi bi-broadcast"></i>
+        </div>
+        <div>
+            <h1 style="font-weight:800;font-size:1.1rem;color:#0f172a;margin:0 0 2px 0;">
+                <span class="live-dot"></span>Live Status Antrian
+            </h1>
+            <p style="color:#64748b;font-size:0.8rem;font-weight:500;margin:0;">
+                {{ order.canteen.name }} &nbsp;•&nbsp; Diperbarui otomatis setiap 4 detik
+            </p>
+        </div>
+    </div>
+    <span id="statusBadgeHeader" class="status-pill status-{{ order.status }}">{{ order.get_status_display }}</span>
+    <img src="{% static 'img/keranang.png' %}" alt="Illustration" class="q-header-illustration">
+</div>
+
+<!-- Main Content -->
+<div class="q-content">
+    <div class="q-grid">
+
+        <!-- LEFT: Big Queue Number -->
+        <div class="queue-big-card">
+            <div id="statusBadge" class="status-pill status-{{ order.status }}">
+                {{ order.get_status_display }}
             </div>
-            
-            <h5 class="text-muted fw-bold mb-4">NOMOR ANTRIAN</h5>
-            
-            <div class="queue-ring mb-4">
-                <div class="queue-number-big" id="queueNumberDisplay">{{ order.queue_number }}</div>
+
+            <div class="queue-number-circle" id="queueCircle">
+                <span class="label">NO. ANTRIAN</span>
+                <h1>{{ order.queue_number }}</h1>
             </div>
-            
-            <h4 class="fw-bold mb-1">{{ order.canteen.name }}</h4>
-            <p class="text-muted mb-0">Total: Rp {{ order.total_price }}</p>
+
+            <div class="queue-canteen-name">{{ order.canteen.name }}</div>
+            <div class="queue-total">Total: Rp {{ order.total_price }}</div>
+
+            <div class="live-info-box">
+                <div class="live-info-row">
+                    <span class="label"><i class="bi bi-person-badge"></i> Sedang Dilayani</span>
+                    <span class="value blue" id="currentServingDisplay">#{{ current_serving }}</span>
+                </div>
+                <div class="live-info-row">
+                    <span class="label"><i class="bi bi-people"></i> Antrian di Depanmu</span>
+                    <span class="value orange" id="positionDisplay">{{ position }} Orang</span>
+                </div>
+                <div class="live-info-row">
+                    <span class="label"><i class="bi bi-clock"></i> Waktu Pesan</span>
+                    <span class="value">{{ order.created_at|date:"H:i" }}</span>
+                </div>
+            </div>
+
+            <!-- Done Banner (hidden by default, shown via JS) -->
+            <div class="done-banner" id="doneBanner">
+                <i class="bi bi-check-circle-fill"></i>
+                <h5>Pesanan Siap! 🎉</h5>
+                <p>Silakan ambil pesananmu di {{ order.canteen.name }}</p>
+            </div>
+            <!-- Cancelled Banner -->
+            <div class="cancelled-banner" id="cancelledBanner">
+                <i class="bi bi-x-circle-fill" style="font-size:2rem;margin-bottom:0.5rem;display:block;"></i>
+                <strong>Pesanan Dibatalkan</strong>
+                <p style="margin:0.3rem 0 0;font-size:0.85rem;">Hubungi kasir untuk info lebih lanjut</p>
+            </div>
+
+            <a href="{% url 'order_history' %}" class="btn-history">
+                <i class="bi bi-clock-history"></i> Lihat Riwayat Pesanan
+            </a>
         </div>
 
-        <!-- Order Stepper -->
-        <div class="card p-4 mb-4">
-            <h6 class="fw-bold mb-3">Progress Pesanan</h6>
-            <div class="order-stepper">
-                <div class="step {% if order.status in 'pending,processing,done' %}done{% endif %}" id="step1">
-                    <div class="step-dot"><i class="bi bi-clock"></i></div>
-                    <div class="step-label">Menunggu</div>
-                    <div class="step-line"></div>
+        <!-- RIGHT: Stepper + ETA + Items -->
+        <div>
+            <!-- Stepper -->
+            <div class="stepper-card">
+                <div class="stepper-line"></div>
+                <div class="step-item {% if order.status in 'pending,processing,done' %}active{% endif %}" id="step1">
+                    <div class="step-icon"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="step-text">Menunggu</div>
                 </div>
-                <div class="step {% if order.status in 'processing,done' %}done{% endif %}" id="step2">
-                    <div class="step-dot"><i class="bi bi-fire"></i></div>
-                    <div class="step-label">Diproses</div>
-                    <div class="step-line"></div>
+                <div class="step-item {% if order.status in 'processing,done' %}active{% endif %}" id="step2">
+                    <div class="step-icon"><i class="bi bi-fire"></i></div>
+                    <div class="step-text">Diproses</div>
                 </div>
-                <div class="step {% if order.status == 'done' %}done active{% endif %}" id="step3">
-                    <div class="step-dot"><i class="bi bi-check2-all"></i></div>
-                    <div class="step-label">Selesai</div>
+                <div class="step-item {% if order.status == 'done' %}active{% endif %}" id="step3">
+                    <div class="step-icon"><i class="bi bi-check-all"></i></div>
+                    <div class="step-text">Selesai</div>
                 </div>
             </div>
-            
-            <div class="mt-4 text-center p-3 rounded bg-surface border-custom" id="etaContainer">
-                <div class="text-muted small mb-1">Perkiraan Waktu</div>
-                <h4 class="text-primary fw-bold mb-0" id="etaDisplay">
-                    {% if order.status == 'done' %}
-                        Pesanan Siap!
-                    {% elif order.status == 'cancelled' %}
-                        Dibatalkan
-                    {% else %}
-                        Menghitung...
-                    {% endif %}
-                </h4>
-            </div>
-        </div>
 
-        <!-- Order Items -->
-        <div class="card">
-            <div class="card-header-custom">Detail Item</div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush bg-transparent">
-                    {% for item in order.items.all %}
-                    <li class="list-group-item bg-transparent border-custom d-flex justify-content-between align-items-center p-3 text-white">
-                        <div>
-                            <span class="fw-bold">{{ item.quantity }}x</span> {{ item.menu_item.name }}
-                        </div>
-                        <span class="fw-bold">Rp {{ item.subtotal }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
+            <!-- ETA -->
+            <div class="eta-card">
+                <div class="eta-icon" id="etaIcon"><i class="bi bi-stopwatch"></i></div>
+                <div>
+                    <div class="eta-label">Perkiraan Waktu Siap</div>
+                    <div class="eta-value" id="etaValue">
+                        {% if order.status == 'done' %}Siap Diambil!
+                        {% elif order.status == 'cancelled' %}Dibatalkan
+                        {% else %}Menghitung...{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="items-card">
+                <h5><i class="bi bi-bag"></i> Detail Pesanan #{{ order.queue_number }}</h5>
+                {% for item in order.items.all %}
+                <div class="item-row">
+                    <div class="item-left">
+                        <span class="item-qty">{{ item.quantity }}x</span>
+                        <span class="item-name">{{ item.menu_item.name }}</span>
+                    </div>
+                    <span class="item-subtotal">Rp {{ item.subtotal }}</span>
+                </div>
+                {% endfor %}
+                {% if order.notes %}
+                <div style="margin-top:0.8rem;padding:0.75rem;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;font-size:0.85rem;color:#92400e;">
+                    <i class="bi bi-chat-text"></i> <strong>Catatan:</strong> {{ order.notes }}
+                </div>
+                {% endif %}
+                <div class="items-total-row">
+                    <span>Total Pembayaran</span>
+                    <span>Rp {{ order.total_price }}</span>
+                </div>
             </div>
         </div>
 
     </div>
 </div>
+
+<!-- Data bridge: Django vars → JS via data attributes -->
+<div id="queueData"
+     data-order-id="{{ order.id }}"
+     data-status="{{ order.status }}"
+     data-position="{{ position }}"
+     style="display:none;"></div>
+
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 <script>
-    const orderId = {{ order.id }};
-    const notifAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // short bell sound
-    let currentStatus = '{{ order.status }}';
+    // Read Django vars from data attributes (avoids JS linter false positives)
+    const _d = document.getElementById('queueData').dataset;
+    const orderId = parseInt(_d.orderId);
+    let currentStatus = _d.status;
+    const initPos = parseInt(_d.position) || 0;
+    const notifAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-    function updateQueueUI(data) {
-        // Update Status Badge
-        const badge = document.getElementById('statusBadgeDisplay');
-        badge.className = `badge status-badge badge-${data.status}`;
-        badge.textContent = data.status_display;
+    function setStepState(el, state) {
+        el.className = `step-item ${state}`;
+    }
 
-        // Update Stepper
-        document.getElementById('step1').className = `step ${['pending', 'processing', 'done'].includes(data.status) ? 'done' : ''}`;
-        document.getElementById('step2').className = `step ${['processing', 'done'].includes(data.status) ? 'done' : ''}`;
-        document.getElementById('step3').className = `step ${data.status === 'done' ? 'done active' : ''}`;
+    function updateUI(data) {
+        const st = data.status;
 
-        // Update ETA
-        const eta = document.getElementById('etaDisplay');
-        if (data.status === 'done') {
-            eta.textContent = 'Pesanan Siap Diambil!';
-            eta.className = 'text-success fw-bold mb-0';
-        } else if (data.status === 'cancelled') {
-            eta.textContent = 'Pesanan Dibatalkan';
-            eta.className = 'text-danger fw-bold mb-0';
+        // Status badges
+        ['statusBadge', 'statusBadgeHeader'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.className = `status-pill status-${st}`;
+                el.textContent = data.status_display;
+            }
+        });
+
+        // Stepper
+        setStepState(document.getElementById('step1'),
+            ['pending','processing','done'].includes(st) ? (st === 'pending' ? 'active' : 'done') : '');
+        setStepState(document.getElementById('step2'),
+            ['processing','done'].includes(st) ? (st === 'processing' ? 'active' : 'done') : '');
+        setStepState(document.getElementById('step3'),
+            st === 'done' ? 'active' : '');
+
+        // ETA
+        const etaVal = document.getElementById('etaValue');
+        const etaIcon = document.getElementById('etaIcon');
+        if (st === 'done') {
+            etaVal.textContent = 'Siap Diambil! 🎉';
+            etaVal.style.color = '#16a34a';
+            etaIcon.style.background = 'linear-gradient(135deg,#16a34a,#22c55e)';
+            document.getElementById('doneBanner').style.display = 'block';
+            document.getElementById('queueCircle').style.background = 'linear-gradient(135deg,#16a34a,#22c55e)';
+        } else if (st === 'cancelled') {
+            etaVal.textContent = 'Dibatalkan';
+            etaVal.style.color = '#dc2626';
+            etaIcon.style.background = 'linear-gradient(135deg,#dc2626,#ef4444)';
+            document.getElementById('cancelledBanner').style.display = 'block';
+            document.getElementById('queueCircle').style.background = 'linear-gradient(135deg,#dc2626,#ef4444)';
+        } else if (st === 'processing') {
+            etaVal.textContent = data.estimated_minutes > 0 ? `~${data.estimated_minutes} Menit` : 'Segera Siap!';
+            etaIcon.style.background = 'linear-gradient(135deg,#2563eb,#3b82f6)';
         } else {
-            eta.textContent = `~${data.estimated_minutes} Menit`;
-            eta.className = 'text-warning fw-bold mb-0';
+            etaVal.textContent = data.estimated_minutes > 0 ? `~${data.estimated_minutes} Menit` : '< 5 Menit';
         }
 
-        // Play sound if status changes to processing or done
-        if (currentStatus !== data.status && ['processing', 'done'].includes(data.status)) {
-            notifAudio.play().catch(e => console.log('Audio autoplay blocked'));
-            currentStatus = data.status;
+        // Live info
+        document.getElementById('currentServingDisplay').textContent = `#${data.current_serving}`;
+        document.getElementById('positionDisplay').textContent = `${data.position} Orang`;
+
+        // Sound notification on status change to processing/done
+        if (currentStatus !== st && ['processing', 'done'].includes(st)) {
+            notifAudio.play().catch(() => {});
         }
+        currentStatus = st;
     }
 
     function pollQueue() {
-        if (['done', 'cancelled'].includes(currentStatus)) return; // stop polling
-        
+        if (['done', 'cancelled'].includes(currentStatus)) return;
         fetch(`/queue/${orderId}/api/`)
-            .then(res => res.json())
-            .then(data => updateQueueUI(data))
-            .catch(err => console.error('Polling error', err));
+            .then(r => r.json())
+            .then(data => updateUI(data))
+            .catch(e => console.warn('Polling error', e));
     }
 
-    // Poll every 4 seconds
-    if (!['done', 'cancelled'].includes(currentStatus)) {
+    // Initial ETA calculation
+    const initPos = {{ position }};
+    if (!['done','cancelled'].includes(currentStatus)) {
+        document.getElementById('etaValue').textContent = initPos > 0 ? `~${initPos * 5} Menit` : '< 5 Menit';
         setInterval(pollQueue, 4000);
     }
 </script>

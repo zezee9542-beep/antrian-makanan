@@ -16,6 +16,8 @@ def run():
     admin.role = 'sysadmin'
     admin.is_staff = True
     admin.is_superuser = True
+    admin.is_active = True
+    admin.is_approved = True
     admin.save()
     print("Created Admin: admin / admin123")
 
@@ -24,6 +26,8 @@ def run():
     vendor1.set_password('vendor123')
     vendor1.email = 'vendor1@example.com'
     vendor1.role = 'vendor'
+    vendor1.is_active = True
+    vendor1.is_approved = True
     vendor1.save()
     
     canteen, created = Canteen.objects.get_or_create(vendor=vendor1, defaults={'name': 'Kantin Bu Tini', 'location': 'Lantai 1, Blok A'})
@@ -33,6 +37,8 @@ def run():
     vendor2.set_password('vendor123')
     vendor2.email = 'vendor2@example.com'
     vendor2.role = 'vendor'
+    vendor2.is_active = True
+    vendor2.is_approved = True
     vendor2.save()
     
     canteen2, created = Canteen.objects.get_or_create(vendor=vendor2, defaults={'name': 'Kantin Pak Budi', 'location': 'Lantai 1, Blok B'})
@@ -43,6 +49,8 @@ def run():
     student1.set_password('student123')
     student1.email = 'student1@example.com'
     student1.role = 'student'
+    student1.is_active = True
+    student1.is_approved = True
     student1.save()
     print("Created Student: student1 / student123")
 
@@ -50,6 +58,8 @@ def run():
     student2.set_password('student123')
     student2.email = 'student2@example.com'
     student2.role = 'student'
+    student2.is_active = True
+    student2.is_approved = True
     student2.save()
     print("Created Student: student2 / student123")
 

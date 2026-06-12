@@ -1,0 +1,244 @@
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
+
+{% block title %}Pembayaran - Kantin Smart{% endblock %}
+
+{% block content %}
+<style>
+    .payment-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .payment-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .payment-header i {
+        font-size: 3rem;
+        color: #ff5e00;
+        background: #fff7ed;
+        padding: 1rem;
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        display: inline-block;
+    }
+    .payment-header h2 {
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.5rem;
+    }
+    .total-amount-box {
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .total-amount-box p {
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    .total-amount-box h3 {
+        color: #ff5e00;
+        font-size: 2rem;
+        font-weight: 900;
+        margin: 0;
+    }
+    
+    .payment-method-title {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .method-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    .method-card {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .method-card:hover {
+        border-color: #ff5e00;
+        background: #fff7ed;
+    }
+    .method-card.selected {
+        border-color: #ff5e00;
+        background: #fff7ed;
+        box-shadow: 0 4px 12px rgba(255,94,0,0.1);
+    }
+    .method-card i {
+        font-size: 1.5rem;
+        color: #64748b;
+    }
+    .method-card.selected i {
+        color: #ff5e00;
+    }
+    .method-card span {
+        font-weight: 700;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .btn-pay {
+        background: #ff5e00;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1.2rem;
+        font-weight: 800;
+        font-size: 1.1rem;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-pay:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(255, 94, 0, 0.3);
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.95);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        border-radius: 20px;
+    }
+    .spinner-border {
+        width: 3rem; height: 3rem;
+        color: #ff5e00;
+        margin-bottom: 1rem;
+    }
+    
+    .success-mark {
+        display: none;
+        color: #10b981;
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes pop {
+        0% { transform: scale(0); }
+        100% { transform: scale(1); }
+    }
+</style>
+
+<div class="container">
+    <div class="payment-container">
+        <!-- Loading & Success Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner-border" role="status" id="loadingSpinner"></div>
+            <i class="bi bi-check-circle-fill success-mark" id="successMark"></i>
+            <h4 style="font-weight: 800; color: #0f172a; margin-top: 1rem;" id="loadingText">Memproses Pembayaran...</h4>
+            <p style="color: #64748b;" id="loadingSubtext">Mohon jangan tutup halaman ini</p>
+        </div>
+
+        <div class="payment-header">
+            <i class="bi bi-wallet2"></i>
+            <h2>Pilih Pembayaran</h2>
+            <p class="text-muted">Selesaikan pembayaran untuk Kantin Smart</p>
+        </div>
+
+        <div class="total-amount-box">
+            <p>Total Tagihan</p>
+            <h3>Rp {{ total_price }}</h3>
+        </div>
+
+        <div class="payment-method-title">Metode Pembayaran</div>
+        <div class="method-options">
+            <div class="method-card selected" onclick="selectMethod(this)">
+                <i class="bi bi-qr-code-scan"></i>
+                <span>QRIS</span>
+            </div>
+            <div class="method-card" onclick="selectMethod(this)">
+                <i class="bi bi-wallet-fill" style="color: #4f46e5;"></i>
+                <span>OVO / GoPay</span>
+            </div>
+            <div class="method-card" onclick="selectMethod(this)">
+                <i class="bi bi-bank"></i>
+                <span>Virtual Account</span>
+            </div>
+            <div class="method-card" onclick="selectMethod(this)">
+                <i class="bi bi-cash-coin" style="color: #10b981;"></i>
+                <span>Saldo Smart</span>
+            </div>
+        </div>
+
+        <form action="{% url 'checkout' %}" method="POST" id="finalCheckoutForm">
+            {% csrf_token %}
+            <!-- Passing the notes from the cart page -->
+            <input type="hidden" name="notes" value="{{ notes }}">
+            
+            <button type="button" class="btn-pay" onclick="simulatePayment()">
+                <i class="bi bi-lock-fill"></i> Bayar Sekarang
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function selectMethod(element) {
+        document.querySelectorAll('.method-card').forEach(card => card.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function simulatePayment() {
+        const overlay = document.getElementById('loadingOverlay');
+        const spinner = document.getElementById('loadingSpinner');
+        const successMark = document.getElementById('successMark');
+        const text = document.getElementById('loadingText');
+        const subtext = document.getElementById('loadingSubtext');
+        const form = document.getElementById('finalCheckoutForm');
+
+        // Show overlay
+        overlay.style.display = 'flex';
+
+        // Simulate network request duration
+        setTimeout(() => {
+            // Change to success state
+            spinner.style.display = 'none';
+            successMark.style.display = 'block';
+            text.innerText = 'Pembayaran Berhasil!';
+            text.style.color = '#10b981';
+            subtext.innerText = 'Meneruskan pesanan ke kantin...';
+
+            // Submit form after showing success for 1.5 seconds
+            setTimeout(() => {
+                form.submit();
+            }, 1500);
+            
+        }, 2000);
+    }
+</script>
+{% endblock %}

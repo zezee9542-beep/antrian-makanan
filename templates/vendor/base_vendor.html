@@ -1,0 +1,551 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Food Queue - Penjual{% endblock %}</title>
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        /* =============================================
+           DESIGN TOKENS / GLOBAL VARIABLES
+        ============================================= */
+        :root {
+            --sidebar-bg: #ffffff;
+            --main-bg: #F4F7FB;
+            --card-white: #ffffff;
+            --text-dark: #334155;
+            --text-muted: #64748b;
+            --active-pill: #f97316;
+            /* Match student orange */
+            --active-text: #ffffff;
+            --primary: #f97316;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-dark);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* =============================================
+           SIDEBAR
+        ============================================= */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background-color: var(--sidebar-bg);
+            height: 100vh;
+            border-right: 1px solid var(--border-color);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.03);
+            /* Subtle shadow for sidebar */
+            padding: 1.25rem 1rem 1.5rem 1rem;
+            /* Aligned with top header padding */
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 85px;
+            min-width: 85px;
+            padding: 1.25rem 0.5rem 1.5rem 0.5rem;
+        }
+
+        .sidebar.collapsed .nav-link span,
+        .sidebar.collapsed .nav-link .shortcut,
+        .sidebar.collapsed .brand-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            flex-direction: column;
+            padding: 0;
+            border-bottom: none;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar.collapsed .toggle-sidebar-btn {
+            margin: 1rem auto 0 auto;
+        }
+
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.85rem;
+        }
+
+        .sidebar.collapsed .nav-link i {
+            font-size: 1.4rem;
+        }
+
+        .sidebar.collapsed .nav-link.active::after {
+            display: none;
+        }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding: 0 0.5rem 1.5rem 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-sidebar-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+            padding: 0 0.2rem;
+        }
+
+        .toggle-sidebar-btn:hover {
+            transform: scale(1.1);
+            color: var(--text-dark);
+        }
+
+        /* Navigation Menu */
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            overflow-y: auto;
+        }
+
+        .nav-menu::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.75rem 1rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-link i {
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        .nav-link .shortcut {
+            margin-left: auto;
+            font-size: 0.7rem;
+            border: 1px solid #cbd5e1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .nav-link:hover {
+            background-color: #fff7ed;
+            /* Same hover as student role */
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background-color: var(--active-pill);
+            color: var(--active-text);
+            font-weight: 600;
+        }
+
+        .nav-link.active i {
+            color: var(--active-text);
+        }
+
+        .nav-link.active::after {
+            content: "•";
+            position: absolute;
+            right: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        /* =============================================
+           MAIN CONTENT AREA
+        ============================================= */
+        .main-content {
+            flex-grow: 1;
+            padding: 0 1.5rem 2rem 1.5rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Top Header inside main content */
+        .header-title h1 {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 0.4rem 1rem 0.4rem 0.4rem;
+            border-radius: 50px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        }
+
+        .user-chip:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Responsive Overlay */
+        .sidebar-overlay-dynamic {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1040;
+        }
+
+        @media (max-width: 991px) {
+            .sidebar {
+                position: fixed !important;
+                top: 0;
+                left: -280px;
+                height: 100vh;
+                overflow-y: auto;
+                box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+                transition: left 0.3s ease;
+                z-index: 1050;
+            }
+
+            .sidebar.show {
+                left: 0 !important;
+            }
+
+            .main-content {
+                padding: 1.5rem;
+            }
+
+            .toggle-sidebar-btn {
+                display: none;
+            }
+
+            .close-sidebar-btn {
+                display: flex;
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                background: rgba(255, 255, 255, 0.4);
+                border: none;
+                border-radius: 8px;
+                color: var(--text-dark);
+                font-size: 1.5rem;
+                width: 36px;
+                height: 36px;
+                align-items: center;
+                justify-content: center;
+                z-index: 20;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+            .close-sidebar-btn:hover {
+                background: rgba(255, 255, 255, 0.65);
+            }
+        }
+
+        /* Generic Custom Elements from base.html to retain styles */
+        .card {
+            border-radius: 12px !important;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
+            background: white;
+            overflow: hidden;
+        }
+
+        .stat-card-modern {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card-modern:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header-custom {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #0f172a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-custom th {
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 1rem 1.5rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-custom td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .btn-primary-custom {
+            background: var(--primary);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary-custom:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-outline-primary-custom {
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+            border-radius: 8px;
+            padding: 0.4rem 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-primary-custom:hover {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- =============================================
+         SIDEBAR
+    ============================================= -->
+    <aside class="sidebar" id="sidebar">
+        <button class="close-sidebar-btn d-lg-none" onclick="closeSidebar()">
+            <i class="bi bi-x"></i>
+        </button>
+
+        <div class="sidebar-header" style="justify-content: space-between;">
+            <a href="#" class="brand d-flex align-items-center text-decoration-none"
+                style="gap: 4px; overflow: hidden; white-space: nowrap;">
+                <img src="{% static 'img/logo2.png' %}" alt="Logo" style="height: 44px; border-radius: 8px;">
+                <span class="brand-text fw-bold"
+                    style="font-size: 1.3rem; color: #111827; line-height: 1.1; margin-top: 2px;">Smart<span
+                        style="color: var(--primary);">Food</span></span>
+            </a>
+            <button class="toggle-sidebar-btn d-none d-lg-block" onclick="toggleSidebar()" style="margin-left: 0;">
+                <i class="bi bi-chevron-left" id="toggleIcon"></i>
+            </button>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="{% url 'vendor_dashboard' %}" class="nav-link {% block nav_dashboard %}{% endblock %}">
+                    <i class="bi bi-house"></i> <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'vendor_menu' %}" class="nav-link {% block nav_menu %}{% endblock %}">
+                    <i class="bi bi-journal-text"></i> <span>Kelola Menu</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'vendor_orders' %}" class="nav-link {% block nav_orders %}{% endblock %}">
+                    <i class="bi bi-receipt"></i> <span>Pesanan Masuk</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'vendor_stats' %}" class="nav-link {% block nav_stats %}{% endblock %}">
+                    <i class="bi bi-bar-chart"></i> <span>Laporan Keuangan</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'vendor_qr' %}" class="nav-link {% block nav_qr %}{% endblock %}">
+                    <i class="bi bi-qr-code"></i> <span>QR Kantin</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'notifications' %}" class="nav-link {% block nav_notifikasi %}{% endblock %}">
+                    <i class="bi bi-bell"></i> <span>Notifikasi</span>
+                </a>
+            </li>
+        </ul>
+
+        <ul class="nav-menu bottom-nav"
+            style="flex-grow: 0; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div
+                style="font-size: 0.7rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.5rem; padding-left: 1rem; letter-spacing: 1px;">
+                ACCOUNT
+            </div>
+            <li class="nav-item">
+                <a href="{% url 'profile' %}" class="nav-link {% block nav_profile %}{% endblock %}">
+                    <i class="bi bi-person-circle"></i> <span>Profil Saya</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'logout' %}" class="nav-link">
+                    <i class="bi bi-box-arrow-left"></i> <span>Keluar</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- =============================================
+         MAIN CONTENT
+    ============================================= -->
+    <main class="main-content">
+        <!-- HEADER -->
+        {% include 'vendor/header.html' %}
+
+        <!-- TOAST NOTIFICATIONS -->
+        <div style="position: fixed; top: 30px; right: 30px; z-index: 1060; min-width: 300px; max-width: 400px;">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show border-0 shadow-lg rounded-4 d-flex align-items-center"
+                role="alert"
+                style="background-color: white; border-left: 5px solid {% if message.tags == 'error' %}#ef4444{% else %}var(--primary){% endif %} !important; color: #111827;">
+                <i
+                    class="bi {% if message.tags == 'error' %}bi-exclamation-triangle-fill text-danger{% else %}bi-check-circle-fill text-primary{% endif %} fs-4 me-3"></i>
+                <div>{{ message }}</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- PAGE CONTENT -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Sidebar toggle
+        const sidebarEl = document.getElementById('sidebar');
+        let overlayEl = null;
+        function openSidebar() {
+            if (!overlayEl) {
+                overlayEl = document.createElement('div');
+                overlayEl.className = 'sidebar-overlay-dynamic';
+                overlayEl.addEventListener('click', closeSidebar);
+                document.body.appendChild(overlayEl);
+            }
+            sidebarEl.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            sidebarEl.classList.remove('show');
+            if (overlayEl) {
+                overlayEl.removeEventListener('click', closeSidebar);
+                overlayEl.remove();
+                overlayEl = null;
+            }
+            document.body.style.overflow = '';
+        }
+
+        function toggleSidebar() {
+            const toggleIcon = document.getElementById('toggleIcon');
+            sidebarEl.classList.toggle('collapsed');
+            if (sidebarEl.classList.contains('collapsed')) {
+                toggleIcon.classList.replace('bi-chevron-left', 'bi-chevron-right');
+            } else {
+                toggleIcon.classList.replace('bi-chevron-right', 'bi-chevron-left');
+            }
+        }
+        window.addEventListener('resize', () => { if (window.innerWidth >= 992) closeSidebar(); });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

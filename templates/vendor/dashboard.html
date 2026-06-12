@@ -1,36 +1,77 @@
-{% extends 'base.html' %}
+{% extends 'vendor/base_vendor.html' %}
+{% block nav_dashboard %}active{% endblock %}
 
 {% block title %}Smart Food Queue - Dashboard Penjual{% endblock %}
 {% block page_title %}Dashboard Kantin <span>{{ canteen.name }}</span>{% endblock %}
 
 {% block content %}
 <div class="row g-4 mb-4">
+    <!-- Card 1: Menunggu -->
     <div class="col-md-3">
-        <div class="stat-card orange">
-            <i class="bi bi-hourglass-split stat-icon"></i>
-            <div class="stat-value text-warning">{{ pending_count }}</div>
-            <div class="stat-label">Menunggu Diproses</div>
+        <div class="card stat-card-modern h-100 p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <p class="text-muted mb-1 fw-bold" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Menunggu</p>
+                    <h3 class="fw-bold mb-0 text-dark" id="stat-pending" style="font-size: 1.8rem;">{{ pending_count }}</h3>
+                </div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: #fff7ed; color: #f97316; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <span class="badge" style="background: #fff7ed; color: #f97316; border: 1px solid #ffedd5; font-weight: 600;"><i class="bi bi-clock me-1"></i> Segera diproses</span>
+            </div>
         </div>
     </div>
+    <!-- Card 2: Sedang Dimasak -->
     <div class="col-md-3">
-        <div class="stat-card purple">
-            <i class="bi bi-fire stat-icon"></i>
-            <div class="stat-value text-info">{{ processing_count }}</div>
-            <div class="stat-label">Sedang Dimasak</div>
+        <div class="card stat-card-modern h-100 p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <p class="text-muted mb-1 fw-bold" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Dimasak</p>
+                    <h3 class="fw-bold mb-0 text-dark" id="stat-processing" style="font-size: 1.8rem;">{{ processing_count }}</h3>
+                </div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: #f5f3ff; color: #8b5cf6; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    <i class="bi bi-fire"></i>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <span class="badge" style="background: #f5f3ff; color: #8b5cf6; border: 1px solid #ede9fe; font-weight: 600;"><i class="bi bi-arrow-repeat me-1"></i> Sedang disiapkan</span>
+            </div>
         </div>
     </div>
+    <!-- Card 3: Selesai -->
     <div class="col-md-3">
-        <div class="stat-card green">
-            <i class="bi bi-check2-all stat-icon"></i>
-            <div class="stat-value text-primary">{{ done_count }}</div>
-            <div class="stat-label">Selesai Hari Ini</div>
+        <div class="card stat-card-modern h-100 p-4 border-0">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <p class="text-muted mb-1 fw-bold" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Selesai</p>
+                    <h3 class="fw-bold mb-0 text-dark" id="stat-done" style="font-size: 1.8rem;">{{ done_count }}</h3>
+                </div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <span class="badge" style="background: #ecfdf5; color: #10b981; border: 1px solid #d1fae5; font-weight: 600;"><i class="bi bi-check-circle me-1"></i> Selesai hari ini</span>
+            </div>
         </div>
     </div>
+    <!-- Card 4: Pendapatan -->
     <div class="col-md-3">
-        <div class="stat-card">
-            <i class="bi bi-cash-coin stat-icon"></i>
-            <div class="stat-value fs-4 mt-2 mb-1">Rp {{ revenue_today }}</div>
-            <div class="stat-label">Pendapatan Hari Ini</div>
+        <div class="card stat-card-modern h-100 p-4 border-0" style="background: linear-gradient(135deg, #f97316, #f59e0b);">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <p class="mb-1 fw-bold" style="color: rgba(255,255,255,0.85); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Pendapatan</p>
+                    <h3 class="fw-bold mb-0 text-white" id="stat-revenue" style="font-size: 1.4rem; white-space: nowrap;">Rp {{ revenue_today }}</h3>
+                </div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; backdrop-filter: blur(4px);">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+            <div class="mt-auto">
+                <span class="badge" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); font-weight: 600; backdrop-filter: blur(4px);"><i class="bi bi-graph-up-arrow me-1"></i> Pendapatan kotor hari ini</span>
+            </div>
         </div>
     </div>
 </div>
@@ -39,9 +80,19 @@
     <!-- RECENT ORDERS TABLE -->
     <div class="col-lg-8">
         <div class="card h-100">
-            <div class="card-header-custom">
-                Pesanan Terbaru
-                <a href="{% url 'vendor_orders' %}" class="btn btn-sm btn-outline-primary-custom">Lihat Semua</a>
+            <div class="card-header-custom d-flex justify-content-between align-items-center" style="padding: 1.5rem;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width: 48px; height: 48px; background-color: #eff6ff; border-radius: 12px; display: flex; justify-content: center; align-items: center; color: #3b82f6; font-size: 1.4rem;">
+                        <i class="bi bi-bag"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold m-0" style="color: #0f172a; font-size: 1.15rem;">Pesanan Terbaru</h5>
+                        <p class="text-muted m-0" style="font-size: 0.85rem; font-weight: 500;">Daftar pesanan yang masuk hari ini.</p>
+                    </div>
+                </div>
+                <a href="{% url 'vendor_orders' %}" class="btn text-white fw-bold d-flex align-items-center gap-1 shadow-sm" style="background: linear-gradient(135deg, #f97316, #f59e0b); border-radius: 8px; padding: 0.5rem 1.25rem; font-size: 0.9rem;">
+                    Lihat Semua <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i>
+                </a>
             </div>
             <div class="card-body p-0 overflow-auto">
                 <table class="table-custom">
@@ -68,7 +119,25 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="6" class="text-center p-4 text-muted">Belum ada pesanan masuk.</td></tr>
+                        <tr>
+                            <td colspan="6" class="text-center" style="padding: 4rem 1rem; border-bottom: none;">
+                                <div class="d-flex flex-column align-items-center justify-content-center">
+                                    <div style="width: 140px; height: 140px; background: radial-gradient(circle, #fff7ed 0%, transparent 70%); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; position: relative;">
+                                        <!-- Custom SVG Empty Box to match reference exactly -->
+                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.9;">
+                                            <path d="M12 21.5L2 15.5V8.5L12 14.5V21.5Z" fill="#FDBA74"/>
+                                            <path d="M22 15.5L12 21.5V14.5L22 8.5V15.5Z" fill="#FB923C"/>
+                                            <path d="M12 14.5L2 8.5L12 2.5L22 8.5L12 14.5Z" fill="#FED7AA"/>
+                                            <path d="M16 6.5L6 12.5" stroke="#F97316" stroke-width="0.5"/>
+                                            <!-- Radiating lines -->
+                                            <path d="M3 4L5 6M21 4L19 6M12 1L12 3" stroke="#F97316" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <h5 class="fw-bold" style="color: #0f172a; margin-bottom: 0.4rem; font-size: 1.1rem;">Belum ada pesanan masuk</h5>
+                                    <p class="text-muted" style="font-size: 0.9rem;">Pesanan baru yang masuk akan muncul di sini.</p>
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -92,7 +161,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('todayChart').getContext('2d');
-    new Chart(ctx, {
+    const todayChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: {{ hours_labels|safe }},
@@ -116,7 +185,23 @@
         }
     });
 
-    // Auto refresh dashboard every 30 seconds for new orders
-    setTimeout(() => window.location.reload(), 30000);
+    // Real-time update dashboard stats every 5 seconds
+    setInterval(() => {
+        fetch('/vendor/api/dashboard/')
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) return;
+                document.getElementById('stat-pending').innerText = data.pending_count;
+                document.getElementById('stat-processing').innerText = data.processing_count;
+                document.getElementById('stat-done').innerText = data.done_count;
+                document.getElementById('stat-revenue').innerText = 'Rp ' + data.revenue_today;
+                
+                if (data.chart_data) {
+                    todayChart.data.datasets[0].data = data.chart_data;
+                    todayChart.update();
+                }
+            })
+            .catch(err => console.error(err));
+    }, 5000);
 </script>
 {% endblock %}

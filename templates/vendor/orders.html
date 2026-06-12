@@ -1,71 +1,121 @@
-{% extends 'base.html' %}
+{% extends 'vendor/base_vendor.html' %}
+{% block nav_orders %}active{% endblock %}
 
 {% block title %}Smart Food Queue - Pesanan Masuk{% endblock %}
 {% block page_title %}Pesanan Kantin: <span>{{ canteen.name }}</span>{% endblock %}
 
 {% block content %}
+<!-- Filter Tabs -->
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div class="d-flex gap-2 overflow-auto pb-2" style="scrollbar-width: none;">
-        <a href="{% url 'vendor_orders' %}" class="btn {% if not status_filter %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">Semua</a>
-        <a href="?status=pending" class="btn {% if status_filter == 'pending' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
-            <i class="bi bi-hourglass text-warning"></i> Menunggu
-        </a>
-        <a href="?status=processing" class="btn {% if status_filter == 'processing' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
-            <i class="bi bi-fire text-info"></i> Diproses
-        </a>
-        <a href="?status=done" class="btn {% if status_filter == 'done' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
-            <i class="bi bi-check2 text-success"></i> Selesai
-        </a>
+    <div class="d-flex gap-2 overflow-auto pb-2" style="scrollbar-width: none;" id="filterTabs">
+        <button onclick="setFilter('')"    class="btn btn-primary-custom rounded-pill text-nowrap filter-btn active-filter" data-status="">Semua</button>
+        <button onclick="setFilter('pending')"    class="btn btn-outline-primary-custom rounded-pill text-nowrap filter-btn" data-status="pending"><i class="bi bi-hourglass text-warning"></i> Menunggu</button>
+        <button onclick="setFilter('processing')" class="btn btn-outline-primary-custom rounded-pill text-nowrap filter-btn" data-status="processing"><i class="bi bi-fire text-info"></i> Diproses</button>
+        <button onclick="setFilter('done')"       class="btn btn-outline-primary-custom rounded-pill text-nowrap filter-btn" data-status="done"><i class="bi bi-check2 text-success"></i> Selesai</button>
+    </div>
+    <div class="d-flex align-items-center gap-2 text-muted small">
+        <span class="status-dot" style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;animation:pulse 2s infinite;"></span>
+        Live Update
     </div>
 </div>
 
-<div class="row g-4">
-    {% for order in orders %}
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 position-relative {% if order.status == 'pending' %}border-warning{% elif order.status == 'processing' %}border-info{% endif %}">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="queue-number-big fs-1">#{{ order.queue_number }}</div>
-                    <span class="badge status-badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
-                </div>
-                
-                <div class="fw-bold fs-5 text-white mb-1">{{ order.user.username }}</div>
-                <div class="text-muted small mb-3"><i class="bi bi-clock"></i> {{ order.created_at|date:"H:i" }}</div>
-                
-                <div class="bg-surface rounded-custom p-3 mb-3 border-custom" style="max-height: 120px; overflow-y: auto;">
-                    <ul class="list-unstyled m-0 small">
-                        {% for item in order.items.all %}
-                        <li class="d-flex justify-content-between mb-1">
-                            <span><span class="fw-bold">{{ item.quantity }}x</span> {{ item.menu_item.name }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% if order.notes %}
-                    <div class="mt-2 pt-2 border-top border-custom text-warning"><i class="bi bi-chat-quote-fill"></i> {{ order.notes }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="d-flex justify-content-between align-items-center mt-auto">
-                    <div class="fw-bold text-primary fs-5">Rp {{ order.total_price }}</div>
-                    <a href="{% url 'vendor_order_detail' order.id %}" class="btn btn-sm btn-outline-primary-custom">Update Status</a>
-                </div>
-            </div>
-        </div>
+<!-- Orders Grid -->
+<div class="row g-4" id="ordersGrid">
+    <div class="col-12 text-center py-5 text-muted">
+        <div class="spinner-border spinner-border-sm me-2"></div> Memuat pesanan...
     </div>
-    {% empty %}
-    <div class="col-12">
-        <div class="card card-body text-center p-5 text-muted">
-            <i class="bi bi-inbox fs-1 mb-3"></i>
-            <h5>Belum ada pesanan dengan status ini.</h5>
-        </div>
-    </div>
-    {% endfor %}
 </div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.order-card-new { animation: slideIn 0.4s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Auto refresh every 30 seconds to catch new orders
-    setTimeout(() => window.location.reload(), 30000);
+    let currentFilter = '{{ status_filter }}';
+    let knownIds = new Set();
+
+    function setFilter(status) {
+        currentFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.toggle('active-filter', b.dataset.status === status);
+            b.classList.toggle('btn-primary-custom', b.dataset.status === status);
+            b.classList.toggle('btn-outline-primary-custom', b.dataset.status !== status);
+        });
+        knownIds = new Set(); // reset known IDs on filter change
+        pollOrders();
+    }
+
+    function renderOrders(orders) {
+        const grid = document.getElementById('ordersGrid');
+        if (orders.length === 0) {
+            grid.innerHTML = `<div class="col-12"><div class="card card-body text-center p-5 text-muted"><i class="bi bi-inbox fs-1 mb-3"></i><h5>Belum ada pesanan dengan status ini.</h5></div></div>`;
+            return;
+        }
+
+        // Add new cards for new orders
+        const newIds = new Set(orders.map(o => o.id));
+        // Remove cards for orders no longer in list
+        grid.querySelectorAll('[data-order-id]').forEach(el => {
+            if (!newIds.has(parseInt(el.dataset.orderId))) el.parentElement.remove();
+        });
+
+        orders.forEach(o => {
+            const existing = grid.querySelector(`[data-order-id="${o.id}"]`);
+            const itemsHtml = o.items.map(i => `<li class="d-flex justify-content-between mb-1"><span><span class="fw-bold">${i.qty}x</span> ${i.name}</span></li>`).join('');
+            const noteHtml = o.notes ? `<div class="mt-2 pt-2 border-top border-custom text-warning"><i class="bi bi-chat-quote-fill"></i> ${o.notes}</div>` : '';
+            const borderClass = o.status === 'pending' ? 'border-warning' : o.status === 'processing' ? 'border-info' : '';
+            const cardHtml = `
+                <div class="card h-100 position-relative ${borderClass}" data-order-id="${o.id}">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="queue-number-big fs-1">#${o.queue_number}</div>
+                            <span class="badge status-badge badge-${o.status}">${o.status_display}</span>
+                        </div>
+                        <div class="fw-bold fs-5 text-white mb-1">${o.user}</div>
+                        <div class="text-muted small mb-3"><i class="bi bi-clock"></i> ${o.created_at}</div>
+                        <div class="bg-surface rounded-custom p-3 mb-3 border-custom" style="max-height:120px;overflow-y:auto;">
+                            <ul class="list-unstyled m-0 small">${itemsHtml}</ul>
+                            ${noteHtml}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <div class="fw-bold text-primary fs-5">Rp ${o.total_price}</div>
+                            <a href="/vendor/orders/${o.id}/" class="btn btn-sm btn-outline-primary-custom">Update Status</a>
+                        </div>
+                    </div>
+                </div>`;
+
+            if (!existing) {
+                // New order — add to front
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-4 order-card-new';
+                col.innerHTML = cardHtml;
+                if (grid.firstChild && grid.firstChild.classList && grid.firstChild.classList.contains('col-12')) {
+                    grid.innerHTML = '';
+                }
+                grid.prepend(col);
+            } else {
+                // Update existing badge/status
+                const badge = existing.querySelector('.status-badge');
+                if (badge) { badge.className = `badge status-badge badge-${o.status}`; badge.textContent = o.status_display; }
+                existing.className = `card h-100 position-relative ${borderClass}`;
+            }
+        });
+    }
+
+    function pollOrders() {
+        const url = `/vendor/api/orders/${currentFilter ? '?status=' + currentFilter : ''}`;
+        fetch(url)
+            .then(r => r.json())
+            .then(d => { if (d.orders) renderOrders(d.orders); })
+            .catch(e => console.error('Orders poll error:', e));
+    }
+
+    // Initial load + poll every 4 seconds
+    pollOrders();
+    setInterval(pollOrders, 4000);
 </script>
 {% endblock %}

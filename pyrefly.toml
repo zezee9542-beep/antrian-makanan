@@ -1,0 +1,24 @@
+[tool.pyrefly]
+# Point Pyrefly to the correct Python interpreter where Django is installed
+python-interpreter = "C:/Users/muhammad zackly i/AppData/Local/Programs/Python/Python313/python.exe"
+
+# Search paths for the project
+search-paths = [
+    ".",
+    "accounts",
+    "orders",
+    "menu",
+    "qrcode_app",
+    "notifications",
+    "ai_features",
+]
+
+# Exclude virtual/generated files
+exclude = [
+    "__pycache__",
+    "*.pyc",
+    "migrations",
+    "staticfiles",
+    "media",
+    ".git",
+]

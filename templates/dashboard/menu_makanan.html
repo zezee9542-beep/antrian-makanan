@@ -395,6 +395,38 @@
 </style>
 
 <div class="container-fluid p-0">
+    <!-- KANTEEN SESSION BANNER -->
+    {% if not has_canteen_session %}
+    <!-- No QR Scanned Yet -->
+    <div style="background:linear-gradient(135deg,#ff5e00,#ff8c00);border-radius:16px;padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;box-shadow:0 8px 25px rgba(255,94,0,0.2);">
+        <div style="display:flex;align-items:center;gap:1.2rem;">
+            <div style="width:55px;height:55px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">📱</div>
+            <div>
+                <div style="font-weight:800;font-size:1.1rem;color:white;margin-bottom:0.2rem;">Scan QR Kantin Terlebih Dahulu!</div>
+                <div style="color:rgba(255,255,255,0.85);font-size:0.9rem;">Scan QR kode yang ada di meja/kasir kantin untuk mulai memesan</div>
+            </div>
+        </div>
+        <a href="{% url 'scan_qr' %}" style="background:white;color:#ff5e00;padding:0.8rem 2rem;border-radius:10px;font-weight:800;text-decoration:none;display:flex;align-items:center;gap:0.6rem;white-space:nowrap;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:all 0.2s;">
+            <i class="bi bi-qr-code-scan"></i> Scan QR Sekarang
+        </a>
+    </div>
+    {% else %}
+    <!-- Canteen Active Session -->
+    <div style="background:white;border-radius:16px;padding:1.2rem 2rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;border:2px solid #dcfce7;box-shadow:0 4px 15px rgba(22,163,74,0.07);">
+        <div style="display:flex;align-items:center;gap:1.2rem;">
+            <div style="width:48px;height:48px;background:#dcfce7;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#16a34a;"><i class="bi bi-shop"></i></div>
+            <div>
+                <div style="font-size:0.8rem;color:#64748b;font-weight:600;margin-bottom:0.2rem;">Kantin Aktif</div>
+                <div style="font-weight:800;font-size:1.05rem;color:#0f172a;">{{ active_canteen.name }}</div>
+                {% if active_canteen.location %}<div style="font-size:0.82rem;color:#64748b;"><i class="bi bi-geo-alt"></i> {{ active_canteen.location }}</div>{% endif %}
+            </div>
+        </div>
+        <a href="{% url 'clear_canteen_session' %}" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:0.6rem 1.4rem;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;display:flex;align-items:center;gap:0.5rem;transition:all 0.2s;">
+            <i class="bi bi-qr-code-scan"></i> Ganti Kantin
+        </a>
+    </div>
+    {% endif %}
+
     <!-- PROMO BANNER -->
     <div class="promo-banner">
         <div class="banner-left">
@@ -440,240 +472,134 @@
                     <div class="filter-bar d-flex flex-column flex-md-row gap-3 align-items-md-center">
                         <div class="search-input-wrapper">
                             <i class="bi bi-search"></i>
-                            <input type="text" name="search" placeholder="Search in products">
+                            <input type="text" name="search" placeholder="Cari menu makanan..." value="{{ search }}">
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <select name="category" class="form-select-custom bg-white">
-                                <option value="">All Category</option>
-                                <option>Rice</option>
-                                <option>Beverages</option>
+                            <select name="category" class="form-select-custom bg-white" onchange="this.form.submit()">
+                                <option value="">Semua Kategori</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if selected_cat == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
                             </select>
-                            <select name="canteen" class="form-select-custom bg-white">
-                                <option value="">Select Brand</option>
-                                <option>Kantin Utama</option>
+                            <select name="canteen" class="form-select-custom bg-white" onchange="this.form.submit()">
+                                <option value="">Semua Kantin</option>
+                                {% for c in canteens %}
+                                <option value="{{ c.id }}" {% if selected_canteen == c.id %}selected{% endif %}>{{ c.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
 
                     <!-- Category Pills -->
                     <div class="category-pills">
-                        <a href="#" class="pill-btn active">Show All</a>
-                        <a href="#" class="pill-btn">Rice</a>
-                        <a href="#" class="pill-btn">Beverages</a>
-                        <a href="#" class="pill-btn">Salads</a>
-                        <a href="#" class="pill-btn">Soup</a>
-                        <a href="#" class="pill-btn">Pizza</a>
+                        <a href="{% url 'student_menu' %}" class="pill-btn {% if not selected_cat %}active{% endif %}">Semua</a>
+                        {% for cat in categories %}
+                        <a href="?category={{ cat.id }}{% if selected_canteen %}&canteen={{ selected_canteen }}{% endif %}" class="pill-btn {% if selected_cat == cat.id %}active{% endif %}">{{ cat.name }}</a>
+                        {% endfor %}
                     </div>
                 </form>
 
-                <!-- Food Grid (DUMMY DATA) -->
+                <!-- Food Grid (Real Data) -->
                 <div class="food-grid">
-                    <!-- Card 1 -->
+                    {% for item in items %}
                     <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=300&q=80" alt="Shrimp Basil Salad" class="food-img">
+                        <a href="{% url 'student_menu_detail' item.id %}" class="food-img-wrapper">
+                            {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="food-img">
+                            {% else %}
+                            <div style="width:100%;height:100%;background:#f1f5f9;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:2.5rem;">
+                                <i class="bi bi-egg-fried"></i>
+                            </div>
+                            {% endif %}
                         </a>
                         <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Shrimp Basil Salad</a>
+                            <a href="{% url 'student_menu_detail' item.id %}" class="food-name">{{ item.name }}</a>
+                            <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:0.3rem;">{{ item.canteen.name }}</div>
                             <div class="food-price-row">
-                                <span class="food-price">Rp 15.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
+                                <span class="food-price">Rp {{ item.price }}</span>
+                                <form method="POST" action="{% url 'add_to_cart' item.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="add-btn" title="Tambah ke Keranjang">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
-                    <!-- Card 2 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1639024471283-03518883512d?auto=format&fit=crop&w=300&q=80" alt="Onion Rings" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Onion Rings</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 12.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
+                    {% empty %}
+                    <div style="grid-column: 1/-1; text-align: center; padding: 4rem 2rem; color: #94a3b8;">
+                        <i class="bi bi-search" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
+                        <h5 style="font-weight:700;color:#64748b;">Tidak ada menu ditemukan</h5>
+                        <p>Coba ubah filter atau kata kunci pencarian.</p>
+                        <a href="{% url 'student_menu' %}" style="color:#ff5e00;font-weight:600;">Reset Filter</a>
                     </div>
-                    <!-- Card 3 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1528607929212-23160b466fd9?auto=format&fit=crop&w=300&q=80" alt="Smoked Bacon" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Smoked Bacon</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 20.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 4 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=300&q=80" alt="Fresh Tomatoes" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Fresh Tomatoes</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 8.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 5 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80" alt="Chicken Burger" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Chicken Burger</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 25.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 6 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1625938144755-652e08e359b7?auto=format&fit=crop&w=300&q=80" alt="Red Onion Rings" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Red Onion Rings</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 12.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 7 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=300&q=80" alt="Beef Burger" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Beef Burger</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 28.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 8 -->
-                    <div class="food-card">
-                        <a href="{% url 'student_menu_detail' 1 %}" class="food-img-wrapper">
-                            <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=300&q=80" alt="Grilled Burger" class="food-img">
-                        </a>
-                        <div class="food-info">
-                            <a href="{% url 'student_menu_detail' 1 %}" class="food-name">Grilled Burger</a>
-                            <div class="food-price-row">
-                                <span class="food-price">Rp 30.000</span>
-                                <button class="add-btn"><i class="bi bi-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: CART PANEL (DUMMY) -->
+            <!-- RIGHT COLUMN: CART SUMMARY -->
             <div class="col-xl-4 col-lg-5 ps-lg-4">
                 <div class="cart-panel">
-                    <!-- Inner search/filters mimicking POS -->
-                    <div class="search-input-wrapper mb-3">
-                        <i class="bi bi-search" style="font-size: 0.8rem;"></i>
-                        <input type="text" placeholder="Search in Existing" style="padding: 0.5rem 1rem 0.5rem 2rem; font-size: 0.85rem;">
-                    </div>
-                    <div class="cart-top-filters">
-                        <select class="form-select-custom bg-white">
-                            <option>Select Dining</option>
-                        </select>
-                        <select class="form-select-custom bg-white">
-                            <option>Select Table</option>
-                        </select>
-                    </div>
-
-                    <!-- Order Header -->
+                    <!-- Cart Header -->
                     <div class="cart-header">
-                        <h4><i class="bi bi-handbag"></i> Order #20</h4>
+                        <h4><i class="bi bi-handbag"></i> Keranjang Saya</h4>
+                        <a href="{% url 'cart' %}" style="font-size:0.85rem;color:#ff5e00;font-weight:600;text-decoration:none;">Lihat Semua →</a>
                     </div>
 
+                    {% with cart=request.user.cart %}
                     <!-- Cart Items List -->
                     <div class="cart-items">
-                        <!-- Cart Item 1 -->
-                        <div class="cart-item-card">
-                            <button class="delete-btn"><i class="bi bi-trash3"></i></button>
-                            <div class="cart-item-title">Fresh Basil Salad</div>
-                            <div class="cart-item-price">Rp 15.000 × 2 = Rp 30.000</div>
-                            <div class="cart-item-controls">
-                                <div class="qty-control">
-                                    <button class="qty-btn">-</button>
-                                    <span class="qty-num">2</span>
-                                    <button class="qty-btn" style="background:#f97316; color:white;">+</button>
+                        {% if cart.cart_items.all %}
+                            {% for ci in cart.cart_items.all %}
+                            <div class="cart-item-card">
+                                <a href="{% url 'remove_from_cart' ci.id %}" class="delete-btn"><i class="bi bi-trash3"></i></a>
+                                <div class="cart-item-title">{{ ci.menu_item.name }}</div>
+                                <div class="cart-item-price">Rp {{ ci.menu_item.price }} × {{ ci.quantity }} = Rp {{ ci.subtotal }}</div>
+                                <div class="cart-item-controls">
+                                    <div class="qty-control">
+                                        <a href="{% url 'remove_from_cart' ci.id %}" class="qty-btn" style="text-decoration:none;">-</a>
+                                        <span class="qty-num">{{ ci.quantity }}</span>
+                                        <form method="POST" action="{% url 'add_to_cart' ci.menu_item.id %}" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="qty-btn" style="background:#f97316;color:white;">+</button>
+                                        </form>
+                                    </div>
                                 </div>
-                                <button class="add-notes-btn"><i class="bi bi-pencil-square"></i> Add Notes</button>
                             </div>
-                        </div>
-                        <!-- Cart Item 2 -->
-                        <div class="cart-item-card">
-                            <button class="delete-btn"><i class="bi bi-trash3"></i></button>
-                            <div class="cart-item-title">Chicken Burger</div>
-                            <div class="cart-item-price">Rp 25.000 × 1 = Rp 25.000</div>
-                            <div class="cart-item-controls">
-                                <div class="qty-control">
-                                    <button class="qty-btn">-</button>
-                                    <span class="qty-num">1</span>
-                                    <button class="qty-btn" style="background:#f97316; color:white;">+</button>
-                                </div>
-                                <button class="add-notes-btn"><i class="bi bi-pencil-square"></i> Add Notes</button>
+                            {% endfor %}
+                        {% else %}
+                            <div style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+                                <i class="bi bi-cart3" style="font-size:2.5rem;display:block;margin-bottom:0.75rem;"></i>
+                                <p style="font-weight:600;">Keranjang masih kosong</p>
+                                <p style="font-size:0.85rem;">Tekan tombol <b>+</b> pada menu untuk menambah</p>
                             </div>
-                        </div>
-                        <!-- Cart Item 3 -->
-                        <div class="cart-item-card">
-                            <button class="delete-btn"><i class="bi bi-trash3"></i></button>
-                            <div class="cart-item-title">Onion Rings</div>
-                            <div class="cart-item-price">Rp 12.000 × 1 = Rp 12.000</div>
-                            <div class="cart-item-controls">
-                                <div class="qty-control">
-                                    <button class="qty-btn">-</button>
-                                    <span class="qty-num">1</span>
-                                    <button class="qty-btn" style="background:#f97316; color:white;">+</button>
-                                </div>
-                                <button class="add-notes-btn"><i class="bi bi-pencil-square"></i> Add Notes</button>
-                            </div>
-                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- Summary & Checkout -->
                     <div class="cart-summary mt-auto">
                         <div class="summary-row">
-                            <span>Sub total :</span>
-                            <span>Rp 67.000</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>Product Discount :</span>
-                            <span>Rp 0</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>Extra Discount :</span>
-                            <span><i class="bi bi-pencil me-1" style="font-size:0.7rem;"></i> Rp 0</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>Coupon discount :</span>
-                            <span><i class="bi bi-pencil me-1" style="font-size:0.7rem;"></i> Rp 0</span>
+                            <span>Total Item :</span>
+                            <span><b>{{ cart.total_items }}</b></span>
                         </div>
                         <div class="summary-total">
                             <span>Total :</span>
-                            <span>Rp 67.000</span>
+                            <span>Rp {{ cart.total_price }}</span>
                         </div>
 
                         <!-- Action Buttons -->
                         <div class="cart-actions">
-                            <button class="cart-btn btn-dark-custom">Checkout & Proses</button>
-                            <button class="cart-btn btn-orange">Bayar Nanti</button>
-                            <button class="cart-btn btn-green">Bayar Sekarang</button>
+                            {% if cart.cart_items.all %}
+                            <a href="{% url 'cart' %}" class="cart-btn btn-dark-custom" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+                                <i class="bi bi-bag-check"></i> Lanjut ke Keranjang
+                            </a>
+                            {% else %}
+                            <button class="cart-btn btn-dark-custom" disabled style="opacity:0.5;">Keranjang Kosong</button>
+                            {% endif %}
                         </div>
                     </div>
+                    {% endwith %}
                 </div>
             </div>
         </div>

@@ -60,7 +60,8 @@
             background-color: var(--sidebar-bg);
             height: 100vh;
             border-right: 1px solid var(--border-color);
-            padding: 2.5rem 1rem 1.5rem 1rem;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.03); /* Subtle shadow */
+            padding: 1.25rem 1rem 1.5rem 1rem; /* Aligned with top header padding */
             display: flex;
             flex-direction: column;
             z-index: 10;
@@ -71,7 +72,7 @@
         .sidebar.collapsed {
             width: 85px;
             min-width: 85px;
-            padding: 2.5rem 0.5rem 1.5rem 0.5rem;
+            padding: 1.25rem 0.5rem 1.5rem 0.5rem;
         }
 
         .sidebar.collapsed .nav-link span,
@@ -425,7 +426,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link {% block nav_status_antrian %}{% endblock %}">
+                <a href="{% url 'current_queue' %}" class="nav-link {% block nav_status_antrian %}{% endblock %}">
                     <i class="bi bi-activity"></i> <span>Status Antrian</span>
                 </a>
             </li>
@@ -435,7 +436,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link {% block nav_notifikasi %}{% endblock %}">
+                <a href="{% url 'notifications' %}" class="nav-link {% block nav_notifikasi %}{% endblock %}">
                     <i class="bi bi-bell"></i> <span>Notifikasi</span>
                 </a>
             </li>

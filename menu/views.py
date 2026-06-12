@@ -6,6 +6,8 @@ from .models import MenuItem, Category
 from accounts.models import Canteen
 from orders.models import Order
 from django.db.models import Sum
+from datetime import timedelta
+import json
 
 from django.utils import timezone
 
@@ -40,9 +42,16 @@ def vendor_dashboard(request):
         return redirect('dashboard')
     try:
         canteen = request.user.canteen
-    except Canteen.DoesNotExist:
-        messages.warning(request, 'Kamu belum punya kantin. Hubungi Admin.')
-        return redirect('dashboard')
+    except Exception:
+        # Vendor belum punya kantin - tampilkan halaman info
+        messages.warning(request, 'Akun vendor kamu belum memiliki kantin. Hubungi Admin Sistem untuk mendapatkan kantin.')
+        from django.http import HttpResponse
+        return HttpResponse("""
+        <div style='font-family:sans-serif;text-align:center;padding:4rem;'>
+            <h2>&#128203; Akun Vendor Belum Memiliki Kantin</h2>
+            <p style='color:#666;'>Silakan hubungi Admin Sistem untuk mengonfigurasi kantin Anda.</p>
+            <a href='/logout/' style='background:#6eb5a8;color:white;padding:0.8rem 2rem;border-radius:8px;text-decoration:none;'>Logout</a>
+        </div>""")
 
     today = timezone.now().date()
     orders_today = Order.objects.filter(canteen=canteen, created_at__date=today)
@@ -69,6 +78,61 @@ def vendor_dashboard(request):
         'hourly_counts': json.dumps(hourly_counts),
     }
     return render(request, 'vendor/dashboard.html', context)
+
+
+@login_required
+def vendor_dashboard_api(request):
+    if not request.user.is_vendor():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        canteen = request.user.canteen
+    except Exception:
+        return JsonResponse({'error': 'No canteen'}, status=400)
+    
+    today = timezone.now().date()
+    orders_today = Order.objects.filter(canteen=canteen, created_at__date=today)
+    
+    hourly_counts = []
+    for h in range(6, 22):
+        hourly_counts.append(orders_today.filter(created_at__hour=h).count())
+    
+    return JsonResponse({
+        'pending_count': orders_today.filter(status='pending').count(),
+        'processing_count': orders_today.filter(status='processing').count(),
+        'done_count': orders_today.filter(status='done').count(),
+        'revenue_today': orders_today.filter(status='done').aggregate(total=Sum('total_price'))['total'] or 0,
+        'chart_data': hourly_counts,
+    })
+
+
+@login_required
+def vendor_orders_api(request):
+    """Realtime orders list untuk halaman pesanan vendor"""
+    if not request.user.is_vendor():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        canteen = request.user.canteen
+    except Exception:
+        return JsonResponse({'error': 'No canteen'}, status=400)
+    status_filter = request.GET.get('status', '')
+    orders_qs = Order.objects.filter(canteen=canteen).order_by('-created_at')[:50]
+    if status_filter:
+        orders_qs = orders_qs.filter(status=status_filter)
+    orders_list = []
+    for o in orders_qs:
+        items = [{'name': i.menu_item.name, 'qty': i.quantity} for i in o.items.all()]
+        orders_list.append({
+            'id': o.id,
+            'queue_number': o.queue_number,
+            'user': o.user.username,
+            'status': o.status,
+            'status_display': o.get_status_display(),
+            'total_price': str(o.total_price),
+            'created_at': o.created_at.strftime('%H:%M'),
+            'notes': o.notes or '',
+            'items': items,
+        })
+    return JsonResponse({'orders': orders_list})
 
 
 @login_required

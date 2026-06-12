@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from django.utils import timezone
+from datetime import timedelta
 from .models import Cart, CartItem, Order, OrderItem, generate_queue_number
 from menu.models import MenuItem
 from accounts.models import Canteen
@@ -23,7 +25,20 @@ def cart_view(request):
 def add_to_cart(request, item_id):
     if not request.user.is_student():
         return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    # === WAJIB SCAN QR DULU ===
+    selected_canteen_id = request.session.get('selected_canteen_id')
+    if not selected_canteen_id:
+        messages.error(request, 'Kamu harus scan QR kantin terlebih dahulu sebelum memesan!')
+        return redirect('scan_qr')
+    
     item = get_object_or_404(MenuItem, id=item_id, is_available=True)
+    
+    # Pastikan item dari kantin yang di-scan
+    if item.canteen.id != selected_canteen_id:
+        messages.error(request, f'Item ini dari kantin lain. Kamu hanya bisa memesan dari "{request.session.get("selected_canteen_name")}". Scan QR kantin lain untuk berpindah.')
+        return redirect('student_menu')
+    
     cart, _ = Cart.objects.get_or_create(user=request.user)
 
     # If cart has items from different canteen, clear it
@@ -31,7 +46,6 @@ def add_to_cart(request, item_id):
         cart.cart_items.all().delete()
         cart.canteen = item.canteen
         cart.save()
-        messages.warning(request, 'Keranjang direset karena beda kantin.')
 
     cart.canteen = item.canteen
     cart.save()
@@ -48,7 +62,12 @@ def add_to_cart(request, item_id):
             'total_price': str(cart.total_price()),
         })
     messages.success(request, f'{item.name} ditambahkan ke keranjang!')
-    return redirect(request.META.get('HTTP_REFERER', 'menu_list'))
+    # Redirect back to referer safely; fall back to student_menu (not menu_list which needs canteen_id)
+    referer = request.META.get('HTTP_REFERER', '')
+    if referer and '/menu/' in referer and '/dashboard/' not in referer:
+        # Came from public menu_list page — redirect back there is fine
+        return redirect(referer)
+    return redirect('student_menu')
 
 
 @login_required
@@ -82,6 +101,27 @@ def update_cart_quantity(request, item_id):
 
 
 @login_required
+def mock_payment(request):
+    if not request.user.is_student():
+        return redirect('dashboard')
+    if request.method != 'POST':
+        return redirect('cart')
+        
+    cart = get_object_or_404(Cart, user=request.user)
+    if cart.total_items() == 0:
+        messages.error(request, 'Keranjang kamu kosong!')
+        return redirect('cart')
+
+    notes = request.POST.get('notes', '')
+    
+    return render(request, 'orders/mock_payment.html', {
+        'cart': cart,
+        'notes': notes,
+        'total_price': cart.total_price()
+    })
+
+
+@login_required
 def checkout(request):
     if not request.user.is_student():
         return redirect('dashboard')
@@ -94,10 +134,9 @@ def checkout(request):
     canteen = cart.canteen
 
     # Anomaly detection: check for spam orders
-    from django.utils import timezone
     recent_orders = Order.objects.filter(
         user=request.user,
-        created_at__gte=timezone.now() - timezone.timedelta(minutes=2)
+        created_at__gte=timezone.now() - timedelta(minutes=2)
     ).count()
     if recent_orders >= 5:
         from ai_features.models import AnomalyLog
@@ -170,11 +209,40 @@ def order_detail(request, order_id):
 # =========== QUEUE VIEWS ===========
 
 @login_required
+def current_queue(request):
+    if not request.user.is_student():
+        return redirect('dashboard')
+    # Ambil pesanan terakhir yang dibuat oleh student (termasuk yang sudah selesai/batal)
+    active_order = Order.objects.filter(user=request.user).order_by('-created_at').first()
+    if active_order:
+        return redirect('queue_status', order_id=active_order.id)
+    else:
+        messages.info(request, "Kamu belum pernah membuat pesanan.")
+        return redirect('student_menu')
+
+
+@login_required
 def queue_status(request, order_id):
     if not request.user.is_student():
         return redirect('dashboard')
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    return render(request, 'orders/queue_status.html', {'order': order})
+    
+    # Hitung posisi antrian
+    position = order.get_queue_position()
+    
+    # Hitung nomor antrian yang sedang dilayani saat ini
+    from django.utils import timezone
+    today = timezone.now().date()
+    serving = Order.objects.filter(canteen=order.canteen, status='processing', created_at__date=today).order_by('queue_number').first()
+    if not serving:
+        serving = Order.objects.filter(canteen=order.canteen, status='pending', created_at__date=today).order_by('queue_number').first()
+    current_serving = serving.queue_number if serving else "-"
+
+    return render(request, 'orders/queue_status.html', {
+        'order': order,
+        'position': position,
+        'current_serving': current_serving
+    })
 
 
 @login_required
@@ -186,6 +254,13 @@ def queue_status_api(request, order_id):
     position = order.get_queue_position()
     estimated_minutes = position * 5  # avg 5 min per order
 
+    from django.utils import timezone
+    today = timezone.now().date()
+    serving = Order.objects.filter(canteen=order.canteen, status='processing', created_at__date=today).order_by('queue_number').first()
+    if not serving:
+        serving = Order.objects.filter(canteen=order.canteen, status='pending', created_at__date=today).order_by('queue_number').first()
+    current_serving = serving.queue_number if serving else "-"
+
     return JsonResponse({
         'status': order.status,
         'status_display': order.get_status_display(),
@@ -193,4 +268,5 @@ def queue_status_api(request, order_id):
         'position': position,
         'estimated_minutes': estimated_minutes,
         'canteen_name': order.canteen.name,
+        'current_serving': current_serving
     })

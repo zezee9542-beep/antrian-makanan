@@ -1,35 +1,287 @@
-{% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
 
-{% block title %}Smart Food Queue - Profil{% endblock %}
-{% block page_title %}Profil Saya{% endblock %}
+{% block title %}Profil Saya - Kantin Smart{% endblock %}
+{% block nav_profile %}active{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 col-lg-6">
-        <div class="card card-glass">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center gap-4 mb-4">
-                    <div class="user-avatar" style="width: 80px; height: 80px; font-size: 32px;">
-                        {% if user.avatar %}
-                            <img src="{{ user.avatar.url }}" alt="Avatar">
-                        {% else %}
-                            {{ user.username|make_list|first|upper }}
-                        {% endif %}
-                    </div>
-                    <div>
-                        <h4 class="fw-bold mb-1">{{ user.username }}</h4>
-                        <div class="badge status-badge badge-done">{{ user.get_role_display }}</div>
-                    </div>
-                </div>
+<style>
+    .profile-container {
+        font-family: 'Inter', sans-serif;
+        padding: 0;
+        max-width: 1000px; /* Lebar maksimal sesuai desain */
+        margin: 0 auto;
+    }
 
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <button type="submit" class="btn btn-primary-custom mt-4">Simpan Perubahan</button>
-                </form>
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.8rem 2.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Top Card */
+    .profile-header-card {
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+
+    .avatar-wrapper {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: #94a3b8;
+    }
+    .avatar-wrapper img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .camera-badge {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 28px;
+        height: 28px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ff5e00;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        border: 1px solid #f1f5f9;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    .profile-title {
+        color: #0f172a; /* Tema utama */
+        font-weight: 800;
+        font-size: 1.25rem;
+        margin: 0 0 0.3rem 0;
+    }
+    .profile-subtitle {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin: 0 0 0.2rem 0;
+    }
+
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .section-title {
+        color: #0f172a;
+        font-weight: 800;
+        font-size: 1.15rem;
+        margin: 0;
+    }
+
+    /* Buttons */
+    .btn-edit-orange {
+        background: #f97316;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.4rem 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+    .btn-edit-orange:hover {
+        background: #ea580c;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-edit-white {
+        background: white;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.4rem 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+    .btn-edit-white:hover {
+        background: #f8fafc;
+        color: #0f172a;
+        transform: translateY(-2px);
+    }
+
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem 1.5rem;
+    }
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    .info-label {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .info-value {
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        .profile-header-card {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- Top Card: Profile Header -->
+    <div class="profile-card profile-header-card">
+        <div class="avatar-wrapper">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" alt="Profile Avatar">
+            {% else %}
+                <i class="bi bi-person-fill"></i>
+            {% endif %}
+            <div class="camera-badge">
+                <i class="bi bi-camera-fill"></i>
+            </div>
+        </div>
+        <div>
+            <h2 class="profile-title">{{ user.username|title }}</h2>
+            <p class="profile-subtitle">{{ user.get_role_display|default:"Student" }}</p>
+            <p class="profile-subtitle mt-1">Indonesia</p>
+        </div>
+    </div>
+
+    <!-- Middle Card: Personal Information -->
+    <div class="profile-card">
+        <div class="section-header">
+            <h3 class="section-title">Informasi Pribadi</h3>
+            <button class="btn-edit-orange" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                Edit <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Username</span>
+                <span class="info-value">{{ user.username|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Nama Lengkap</span>
+                <span class="info-value">
+                    {% if user.first_name or user.last_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email Address</span>
+                <span class="info-value">{{ user.email|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">User Role</span>
+                <span class="info-value">{{ user.get_role_display|default:"Student" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Status Akun</span>
+                <span class="info-value">
+                    {% if user.is_active %}
+                        <span style="color: #16a34a;">Aktif</span>
+                    {% else %}
+                        <span style="color: #dc2626;">Tidak Aktif</span>
+                    {% endif %}
+                </span>
             </div>
         </div>
     </div>
+
+    <!-- Bottom Card: Address -->
+    <div class="profile-card">
+        <div class="section-header">
+            <h3 class="section-title">Alamat & Keamanan</h3>
+            <button class="btn-edit-white" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                Edit <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Negara</span>
+                <span class="info-value">Indonesia</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Kota</span>
+                <span class="info-value">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Kode Pos</span>
+                <span class="info-value">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Profil -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+      <div class="modal-header" style="border-bottom: 1px solid #f1f5f9; padding: 1.5rem 2rem;">
+        <h5 class="modal-title fw-bold" id="editProfileModalLabel" style="color: #0f172a;">Edit Profil</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="padding: 2rem;">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% load crispy_forms_tags %}
+            {{ form|crispy }}
+            <button type="submit" class="btn-edit-orange w-100 mt-4 justify-content-center" style="font-size: 1rem; padding: 0.8rem;">Simpan Perubahan</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

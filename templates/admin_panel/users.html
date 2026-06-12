@@ -88,7 +88,7 @@
         <div class="stat-card card-user">
             <div class="d-flex align-items-center mb-1">
                 <div class="icon-box"><i class="bi bi-people-fill stat-icon"></i></div>
-                <div class="stat-value ms-2">{{ total_active|default:"1,250" }} <span class="stat-unit">orang</span></div>
+                <div class="stat-value ms-2" id="val-active">{{ total_active }} <span class="stat-unit">orang</span></div>
             </div>
             <div class="stat-title">Total User Aktif</div>
             <div class="chart-container-wave"><canvas id="userChart"></canvas></div>
@@ -96,7 +96,7 @@
         <div class="stat-card card-order">
             <div class="d-flex align-items-center mb-1">
                 <div class="icon-box"><i class="bi bi-person-badge-fill stat-icon"></i></div>
-                <div class="stat-value ms-2">{{ total_siswa|default:"35" }} <span class="stat-unit">orang</span></div>
+                <div class="stat-value ms-2" id="val-siswa">{{ total_siswa }} <span class="stat-unit">orang</span></div>
             </div>
             <div class="stat-title">Total Siswa</div>
             <div class="chart-container-wave"><canvas id="siswaChart"></canvas></div>
@@ -104,7 +104,7 @@
         <div class="stat-card card-canteen">
             <div class="d-flex align-items-center mb-1">
                 <div class="icon-box"><i class="bi bi-shop stat-icon"></i></div>
-                <div class="stat-value ms-2">{{ total_penjual|default:"12" }} <span class="stat-unit">orang</span></div>
+                <div class="stat-value ms-2" id="val-penjual">{{ total_penjual }} <span class="stat-unit">orang</span></div>
             </div>
             <div class="stat-title">Total Penjual</div>
             <div class="chart-container-wave"><canvas id="penjualChart"></canvas></div>
@@ -112,7 +112,7 @@
         <div class="stat-card card-admin">
             <div class="d-flex align-items-center mb-1">
                 <div class="icon-box"><i class="bi bi-shield-lock-fill stat-icon"></i></div>
-                <div class="stat-value ms-2">{{ total_admin|default:"3" }} <span class="stat-unit">orang</span></div>
+                <div class="stat-value ms-2" id="val-admin">{{ total_admin }} <span class="stat-unit">orang</span></div>
             </div>
             <div class="stat-title">Total Admin</div>
             <div class="chart-container-wave"><canvas id="adminChart"></canvas></div>
@@ -249,15 +249,35 @@
     const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } };
 
     const userCtx = document.getElementById('userChart').getContext('2d');
-    new Chart(userCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Aktif', data: [5, 12, 8, 20, 15, 30, 45], borderColor: '#0E66C5', backgroundColor: createGradient(userCtx, 'rgba(14,102,197,0.2)', 'rgba(14,102,197,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+    const userChart = new Chart(userCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Aktif', data: [0,0,0,0,0,0,0], borderColor: '#0E66C5', backgroundColor: createGradient(userCtx, 'rgba(14,102,197,0.2)', 'rgba(14,102,197,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
 
     const siswaCtx = document.getElementById('siswaChart').getContext('2d');
-    new Chart(siswaCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Siswa', data: [15, 25, 20, 35, 30, 45, 60], borderColor: '#15A03A', backgroundColor: createGradient(siswaCtx, 'rgba(21,160,58,0.2)', 'rgba(21,160,58,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+    const siswaChart = new Chart(siswaCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Siswa', data: [0,0,0,0,0,0,0], borderColor: '#15A03A', backgroundColor: createGradient(siswaCtx, 'rgba(21,160,58,0.2)', 'rgba(21,160,58,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
 
     const penjualCtx = document.getElementById('penjualChart').getContext('2d');
-    new Chart(penjualCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Penjual', data: [5, 15, 10, 20, 18, 25, 35], borderColor: '#EC8513', backgroundColor: createGradient(penjualCtx, 'rgba(236,133,19,0.2)', 'rgba(236,133,19,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+    const penjualChart = new Chart(penjualCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Penjual', data: [0,0,0,0,0,0,0], borderColor: '#EC8513', backgroundColor: createGradient(penjualCtx, 'rgba(236,133,19,0.2)', 'rgba(236,133,19,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
 
     const adminCtx = document.getElementById('adminChart').getContext('2d');
-    new Chart(adminCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Admin', data: [2, 5, 3, 8, 6, 10, 15], borderColor: '#E64251', backgroundColor: createGradient(adminCtx, 'rgba(230,66,81,0.2)', 'rgba(230,66,81,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+    const adminChart = new Chart(adminCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'Admin', data: [0,0,0,0,0,0,0], borderColor: '#E64251', backgroundColor: createGradient(adminCtx, 'rgba(230,66,81,0.2)', 'rgba(230,66,81,0)'), borderWidth: 2, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { ...commonOptions, layout: { padding: { bottom: -5 } } } });
+
+    // Realtime polling every 5s
+    function pollUsersStats() {
+        fetch('/admin-panel/api/users/')
+            .then(r => r.json())
+            .then(d => {
+                if (d.error) return;
+                document.getElementById('val-active').innerHTML  = d.total_active  + ' <span class="stat-unit">orang</span>';
+                document.getElementById('val-siswa').innerHTML   = d.total_siswa   + ' <span class="stat-unit">orang</span>';
+                document.getElementById('val-penjual').innerHTML = d.total_penjual + ' <span class="stat-unit">orang</span>';
+                document.getElementById('val-admin').innerHTML   = d.total_admin   + ' <span class="stat-unit">orang</span>';
+                userChart.data.datasets[0].data   = d.trend_active;   userChart.update('none');
+                siswaChart.data.datasets[0].data  = d.trend_siswa;    siswaChart.update('none');
+                penjualChart.data.datasets[0].data = d.trend_penjual; penjualChart.update('none');
+                adminChart.data.datasets[0].data  = d.trend_admin;    adminChart.update('none');
+            })
+            .catch(e => console.error(e));
+    }
+    pollUsersStats();
+    setInterval(pollUsersStats, 5000);
 </script>
 {% endblock %}

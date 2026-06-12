@@ -1,0 +1,4 @@
+[tool.pyrefly]
+python-interpreter = "C:/Users/muhammad zackly i/AppData/Local/Programs/Python/Python313/python.exe"
+search-paths = ["."]
+exclude = ["__pycache__", "*.pyc", "migrations", "staticfiles", "media"]

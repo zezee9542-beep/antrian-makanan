@@ -3,6 +3,9 @@ from . import views
 
 urlpatterns = [
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('api/dashboard/', views.admin_dashboard_api, name='admin_dashboard_api'),
+    path('api/users/', views.admin_users_api, name='admin_users_api'),
+    path('api/monitoring/', views.admin_monitoring_api, name='admin_monitoring_api'),
     path('users/', views.admin_users, name='admin_users'),
     path('users/<int:user_id>/profile/', views.admin_user_profile, name='admin_user_profile'),
     path('users/<int:user_id>/toggle/', views.admin_toggle_user, name='admin_toggle_user'),

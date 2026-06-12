@@ -1,75 +1,691 @@
-{% extends 'base.html' %}
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
 
-{% block title %}Smart Food Queue - Scan QR{% endblock %}
-{% block page_title %}Scan QR Kantin{% endblock %}
-
-{% block extra_css %}
-<style>
-    #reader {
-        width: 100%;
-        max-width: 500px;
-        margin: 0 auto;
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        border: 2px solid var(--border-primary);
-        box-shadow: var(--shadow-primary);
-    }
-    #reader video { object-fit: cover; }
-    /* Hide some html5-qrcode default UI */
-    #reader__dashboard_section_csr span { color: var(--text) !important; }
-    #reader a { color: var(--primary); }
-</style>
-{% endblock %}
+{% block title %}Scan QR - Kantin Smart{% endblock %}
+{% block nav_scan %}active{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6 text-center">
-        
-        <div class="mb-4">
-            <h4 class="fw-bold">Arahkan Kamera ke QR Code</h4>
-            <p class="text-muted">Scan QR Code yang ada di meja kantin untuk melihat menu dan mengambil antrian.</p>
+<style>
+    /* Header Card - sama persis dengan cart.html */
+    .scan-header-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem 1.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
+        margin-bottom: 0;
+        position: relative;
+        overflow: visible;
+    }
+
+    /* Back icon button */
+    .back-icon-btn {
+        width: 38px;
+        height: 38px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 1.1rem;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        margin-right: 1rem;
+    }
+    .back-icon-btn:hover {
+        background: #fff7ed;
+        color: #ff5e00;
+        border-color: #ffedd5;
+        transform: translateX(-3px);
+    }
+
+    .scan-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        flex: 1;
+    }
+
+    .scan-header-icon {
+        width: 45px;
+        height: 45px;
+        background: #fff7ed;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: #ff5e00;
+        flex-shrink: 0;
+        border: 1px solid #ffedd5;
+    }
+
+    .scan-header-title h1 {
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: #0f172a;
+        margin: 0 0 2px 0;
+    }
+    .scan-header-title p {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin: 0 0 8px 0;
+    }
+
+    .header-badges {
+        display: flex;
+        gap: 0.6rem;
+    }
+    .header-badge {
+        background: #f8fafc;
+        padding: 0.35rem 0.8rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+    }
+    .header-badge:hover {
+        background: #fff7ed;
+        border-color: #ffedd5;
+        transform: translateY(-2px);
+    }
+    .header-badge .badge-icon {
+        width: 26px;
+        height: 26px;
+        background: #fff7ed;
+        color: #ff5e00;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+    }
+    .badge-info h6 { margin: 0; font-weight: 700; font-size: 0.75rem; color: #0f172a; }
+    .badge-info p { margin: 0; font-size: 0.7rem; color: #64748b; }
+
+    /* Illustration 3D overflow effect */
+    .header-illustration {
+        height: calc(100% + 20px);
+        max-height: 130px;
+        object-fit: contain;
+        flex-shrink: 0;
+        margin-left: 1rem;
+        margin-top: -20px;
+        margin-bottom: -10px;
+        filter: drop-shadow(0 8px 15px rgba(255, 94, 0, 0.2));
+        transition: transform 0.3s ease;
+    }
+    .header-illustration:hover {
+        transform: scale(1.05) translateY(-4px);
+    }
+
+    /* Content Area - mepet ke header */
+    .scan-content-area {
+        padding: 1.5rem 0 2rem 0;
+        background: transparent;
+        margin-top: 0.5rem;
+    }
+
+    /* Stepper */
+    .stepper-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem 3rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        border: 1px solid #f1f5f9;
+        position: relative;
+    }
+    .stepper-line {
+        position: absolute;
+        top: 50%;
+        left: 15%;
+        right: 15%;
+        border-top: 2px dashed #cbd5e1;
+        z-index: 1;
+    }
+    .step-item {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.7rem;
+        background: white;
+        padding: 0 1rem;
+    }
+    .step-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        border: 2px solid #e2e8f0;
+        color: #94a3b8;
+        font-size: 1.2rem;
+        transition: all 0.3s;
+    }
+    .step-item.active .step-icon {
+        background: #ff5e00;
+        border-color: #ff5e00;
+        color: white;
+        box-shadow: 0 4px 12px rgba(255,94,0,0.3);
+    }
+    .step-text { text-align: center; }
+    .step-text h6 { margin: 0; font-weight: 800; font-size: 0.85rem; color: #0f172a; }
+    .step-text p { margin: 0; font-size: 0.75rem; color: #64748b; }
+
+    /* Main Grid */
+    .scan-main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Scanner Card */
+    .scanner-card {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid #f1f5f9;
+        text-align: center;
+    }
+    .scanner-card h3 {
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 1.2rem;
+        margin-bottom: 0.4rem;
+    }
+    .scanner-card > p {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+    }
+
+    /* QR Reader Box */
+    #reader {
+        border-radius: 10px;
+        overflow: hidden;
+        width: 100% !important;
+        min-height: 260px;
+        margin-bottom: 1.5rem;
+        border: 2px dashed #e2e8f0;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #reader video { border-radius: 10px; width: 100% !important; }
+    #reader img { display: none !important; }
+    #reader * { font-family: 'Inter', sans-serif !important; }
+    #reader button { display: none !important; }
+    
+    .or-divider {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 1.2rem 0;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+    .or-divider::before, .or-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e2e8f0;
+    }
+
+    .btn-upload-qr {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        cursor: pointer;
+        transition: all 0.25s;
+        color: #0f172a;
+    }
+    .btn-upload-qr i { font-size: 1.5rem; color: #ff5e00; }
+    .btn-upload-qr:hover {
+        background: #fff7ed;
+        border-color: #ff5e00;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255,94,0,0.1);
+    }
+
+    .tips-box {
+        margin-top: 1.2rem;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 0.8rem 1.2rem;
+        color: #92400e;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        text-align: left;
+    }
+
+    /* Instructions Card */
+    .instructions-card {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+    }
+    .instructions-card h4 {
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .step-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+        flex-grow: 1;
+    }
+    .step-item-side {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #f1f5f9;
+        transition: all 0.2s;
+    }
+    .step-item-side:hover {
+        background: #fff7ed;
+        border-color: #ffedd5;
+        transform: translateX(4px);
+    }
+    .step-item-side .icon {
+        width: 38px;
+        height: 38px;
+        background: #fff7ed;
+        color: #ff5e00;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .step-item-side .text h6 { margin: 0 0 0.2rem 0; font-weight: 800; font-size: 0.9rem; color: #0f172a; }
+    .step-item-side .text p { margin: 0; font-size: 0.8rem; color: #64748b; }
+
+    .help-box {
+        background: linear-gradient(135deg, #fff7ed, #fffbeb);
+        border: 1px solid #ffedd5;
+        border-radius: 10px;
+        padding: 1.2rem;
+        margin-top: 1.5rem;
+    }
+    .help-box h6 { font-weight: 800; color: #0f172a; margin-bottom: 0.3rem; }
+    .help-box p { font-size: 0.85rem; color: #64748b; margin-bottom: 0.8rem; }
+    .btn-help {
+        background: #ff5e00;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    .btn-help:hover {
+        background: #ea580c;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,94,0,0.25);
+    }
+
+    /* Footer Features */
+    .footer-features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        background: white;
+        border-radius: 10px;
+        padding: 1.2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid #f1f5f9;
+    }
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0 1.2rem;
+    }
+    .feature-item:not(:last-child) { border-right: 1px solid #e2e8f0; }
+    .feature-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    .icon-green { background: #dcfce7; color: #16a34a; }
+    .icon-orange { background: #fff7ed; color: #ea580c; }
+    .icon-blue { background: #e0f2fe; color: #0284c7; }
+    .feature-text h6 { margin: 0 0 0.2rem 0; font-weight: 800; font-size: 0.9rem; color: #0f172a; }
+    .feature-text p { margin: 0; font-size: 0.78rem; color: #64748b; }
+</style>
+
+<!-- Header Card (Struktur identik cart.html) -->
+<div class="scan-header-card">
+    <!-- Back Icon -->
+    <a href="{% url 'student_dashboard' %}" class="back-icon-btn" title="Kembali ke Dashboard">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+
+    <div class="scan-header-left">
+        <div class="scan-header-icon">
+            <i class="bi bi-qr-code-scan"></i>
         </div>
-
-        <div id="reader" class="mb-4"></div>
-
-        <div class="alert-custom alert-info mx-auto" style="max-width: 500px;">
-            <i class="bi bi-info-circle-fill"></i>
-            <div class="text-start">Pastikan memberi izin akses kamera pada browser kamu.</div>
+        <div class="scan-header-title">
+            <h1>Scan QR Kantin</h1>
+            <p>Scan kode QR untuk melanjutkan ke menu kantin</p>
+            <div class="header-badges">
+                <div class="header-badge">
+                    <div class="badge-icon"><i class="bi bi-shield-check"></i></div>
+                    <div class="badge-info">
+                        <h6>100% Aman</h6>
+                        <p>Transaksi terjamin</p>
+                    </div>
+                </div>
+                <div class="header-badge">
+                    <div class="badge-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <div class="badge-info">
+                        <h6>Proses Instan</h6>
+                        <p>Langsung terdeteksi</p>
+                    </div>
+                </div>
+            </div>
         </div>
-
     </div>
+
+    <!-- Ilustrasi 3D overflow -->
+    <img src="{% static 'img/qrr.png' %}" alt="QR Illustration" class="header-illustration">
 </div>
+
+<!-- Main Content Area - langsung mepet ke header -->
+<div class="scan-content-area">
+
+    <!-- Active Canteen Banner -->
+    {% if active_canteen %}
+    <div style="background:white;border-radius:12px;padding:1.2rem 1.8rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;border:2px solid #dcfce7;box-shadow:0 4px 15px rgba(22,163,74,0.07);">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <div style="width:44px;height:44px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#16a34a;"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+                <div style="font-size:0.78rem;color:#64748b;font-weight:600;">Kamu sudah scan QR</div>
+                <div style="font-weight:800;font-size:1rem;color:#0f172a;">Kantin Aktif: {{ active_canteen.name }}</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.8rem;">
+            <a href="{% url 'student_menu' %}" style="background:#ff5e00;color:white;padding:0.6rem 1.4rem;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
+                <i class="bi bi-grid"></i> Lihat Menu
+            </a>
+            <a href="{% url 'clear_canteen_session' %}" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:0.6rem 1.4rem;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">
+                Ganti Kantin
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stepper -->
+    <div class="stepper-card">
+        <div class="stepper-line"></div>
+        <div class="step-item done">
+            <div class="step-icon"><i class="bi bi-geo-alt"></i></div>
+            <div class="step-text">
+                <h6>1. Pilih Kantin</h6>
+                <p>Datang ke kantin</p>
+            </div>
+        </div>
+        <div class="step-item active">
+            <div class="step-icon"><i class="bi bi-qr-code-scan"></i></div>
+            <div class="step-text">
+                <h6>2. Scan QR</h6>
+                <p>Pindai kode QR</p>
+            </div>
+        </div>
+        <div class="step-item">
+            <div class="step-icon"><i class="bi bi-grid"></i></div>
+            <div class="step-text">
+                <h6>3. Pilih Menu</h6>
+                <p>Tambah ke keranjang</p>
+            </div>
+        </div>
+        <div class="step-item">
+            <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="step-text">
+                <h6>4. Checkout</h6>
+                <p>Dapat no. antrian</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid Utama: Scanner + Instruksi -->
+    <div class="scan-main-grid">
+
+        <!-- Kiri: Kamera Scanner -->
+        <div class="scanner-card">
+            <h3>Arahkan kamera ke kode QR</h3>
+            <p>Pastikan kode QR berada di dalam area kotak</p>
+
+            <div id="reader"></div>
+
+            <div class="or-divider"><span>atau</span></div>
+
+            <button class="btn-upload-qr" onclick="document.getElementById('qr-upload-input').click()">
+                <i class="bi bi-upload"></i>
+                <div class="text-start">
+                    <div style="font-size:0.95rem; font-weight:800; color:#0f172a;">Upload QR dari Galeri</div>
+                    <div style="font-size:0.8rem; font-weight:500; color:#64748b;">Pilih gambar QR dari galeri kamu</div>
+                </div>
+            </button>
+            <input type="file" id="qr-upload-input" accept="image/*" style="display:none;">
+
+            <div class="tips-box">
+                <i class="bi bi-lightbulb"></i>
+                Tips: Pastikan pencahayaan cukup dan kode QR tidak buram
+            </div>
+        </div>
+
+        <!-- Kanan: Panduan -->
+        <div class="instructions-card">
+            <h4>Cara Memesan</h4>
+
+            <div class="step-list">
+                <div class="step-item-side">
+                    <div class="icon"><i class="bi bi-geo-alt-fill"></i></div>
+                    <div class="text">
+                        <h6>1. Datang ke Kantin</h6>
+                        <p>Pilih kantin yang ingin kamu pesan</p>
+                    </div>
+                </div>
+                <div class="step-item-side">
+                    <div class="icon"><i class="bi bi-qr-code-scan"></i></div>
+                    <div class="text">
+                        <h6>2. Scan QR di Meja/Kasir</h6>
+                        <p>Setiap kantin memiliki kode QR unik di meja atau kasir</p>
+                    </div>
+                </div>
+                <div class="step-item-side">
+                    <div class="icon"><i class="bi bi-grid-fill"></i></div>
+                    <div class="text">
+                        <h6>3. Pilih Menu & Tambah Keranjang</h6>
+                        <p>Jelajahi menu kantin dan tambahkan ke keranjang</p>
+                    </div>
+                </div>
+                <div class="step-item-side">
+                    <div class="icon"><i class="bi bi-receipt-cutoff"></i></div>
+                    <div class="text">
+                        <h6>4. Checkout & Dapat Nomor Antrian</h6>
+                        <p>Setelah checkout kamu mendapat nomor antrian otomatis</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-box">
+                <h6>Butuh bantuan?</h6>
+                <p>Tim customer service kami siap membantu</p>
+                <a href="#" class="btn-help"><i class="bi bi-headset"></i> Hubungi Customer Service</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Features -->
+    <div class="footer-features">
+        <div class="feature-item">
+            <div class="feature-icon icon-green"><i class="bi bi-shield-check"></i></div>
+            <div class="feature-text">
+                <h6>Aman & Terpercaya</h6>
+                <p>Transaksi dijamin keamanannya</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon icon-orange"><i class="bi bi-lightning-charge-fill"></i></div>
+            <div class="feature-text">
+                <h6>Proses Cepat</h6>
+                <p>Pembayaran instan dalam hitungan detik</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon icon-blue"><i class="bi bi-clock-history"></i></div>
+            <div class="feature-text">
+                <h6>Mudah Digunakan</h6>
+                <p>Interface sederhana dan intuitif</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const html5QrCode = new Html5Qrcode("reader");
+
         function onScanSuccess(decodedText, decodedResult) {
-            // Stop scanner
-            html5QrcodeScanner.clear();
-            // Show loading
+            if (html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.error(err));
+            }
             document.getElementById('reader').innerHTML = `
-                <div class="p-5 text-center bg-surface">
-                    <div class="spinner mb-3 mx-auto"></div>
-                    <h5 class="text-primary">QR Terbaca!</h5>
-                    <p class="text-muted">Membuka menu kantin...</p>
+                <div style="padding: 4rem 1rem; text-align: center; background: white; border-radius: 10px;">
+                    <div class="spinner-border mb-3" role="status" style="width: 3rem; height: 3rem; color: #ff5e00 !important; border-color: #ff5e00 !important; border-right-color: transparent !important;"></div>
+                    <h4 style="color: #0f172a; font-weight: 800;">QR Terbaca!</h4>
+                    <p style="color: #64748b; font-weight: 500;">Mendaftarkan sesi kantin kamu...</p>
                 </div>
             `;
-            // Redirect to URL (assuming QR contains the full URL like http://localhost:8000/menu/1/)
-            window.location.href = decodedText;
+            // Try to extract canteen_id from URL patterns:
+            // Pattern 1: /menu/<id>/
+            // Pattern 2: canteen_id=<id>
+            // Pattern 3: raw number
+            let canteenId = null;
+            const matchMenu = decodedText.match(/\/menu\/(\d+)\/?/);
+            const matchParam = decodedText.match(/canteen_id=(\d+)/);
+            const matchNum = decodedText.match(/^\d+$/);
+            
+            if (matchMenu) canteenId = matchMenu[1];
+            else if (matchParam) canteenId = matchParam[1];
+            else if (matchNum) canteenId = matchNum[0];
+            
+            if (canteenId) {
+                window.location.href = `/scan/process/?canteen_id=${canteenId}`;
+            } else {
+                // QR tidak cocok format kantin → tampilkan pilih kantin manual
+                window.location.href = '/scan/choose/';
+            }
         }
 
         function onScanFailure(error) {
-            // handle scan failure, usually better to ignore and keep scanning
+            // Ignore ongoing scan failures
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            { fps: 10, qrbox: {width: 250, height: 250} },
-            /* verbose= */ false
-        );
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        function startCamera(mode) {
+            html5QrCode.start(
+                { facingMode: mode },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                onScanFailure
+            ).catch((err) => {
+                if (mode === "environment") {
+                    startCamera("user");
+                } else {
+                    console.error("Gagal memulai kamera:", err);
+                    document.getElementById('reader').innerHTML = `
+                        <div style="padding: 3rem; text-align: center; color: #ef4444;">
+                            <i class="bi bi-camera-video-off" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 fw-bold">Akses Kamera Gagal</h5>
+                            <p style="color: #64748b; font-size: 0.9rem;">Pastikan Anda telah memberikan izin akses kamera pada browser Anda.</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        startCamera("environment");
+
+        const fileInput = document.getElementById('qr-upload-input');
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length == 0) return;
+            const imageFile = e.target.files[0];
+            const readerDiv = document.getElementById('reader');
+
+            if (html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => processFile(imageFile)).catch(() => processFile(imageFile));
+            } else {
+                processFile(imageFile);
+            }
+
+            function processFile(file) {
+                readerDiv.innerHTML = `<div style="padding: 4rem 1rem; text-align: center; color: #ff5e00; font-weight: bold;">Memproses gambar...</div>`;
+                html5QrCode.scanFile(file, true)
+                .then(decodedText => onScanSuccess(decodedText))
+                .catch(err => {
+                    alert("Gagal membaca QR dari gambar. Pastikan gambar jelas dan tidak buram.");
+                    window.location.reload();
+                });
+            }
+        });
     });
 </script>
 {% endblock %}

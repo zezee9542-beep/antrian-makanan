@@ -4,7 +4,9 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.http import JsonResponse
 from django.db import models
+from django.db.models import Q, Count, Sum
 from .forms import RegisterForm, LoginForm, ProfileUpdateForm
 from .models import CustomUser, Canteen
 from orders.models import Order
@@ -40,27 +42,37 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        # Cek dulu apakah user ada tapi belum disetujui
+        username_input = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+
+        # Cek apakah user ada (via username atau email)
+        from django.db.models import Q
         try:
-            pending_user = CustomUser.objects.get(username=username)
+            pending_user = CustomUser.objects.get(
+                Q(username__iexact=username_input) | Q(email__iexact=username_input)
+            )
+            # Jika akun belum disetujui admin
             if not pending_user.is_approved and pending_user.role in ['student', 'vendor']:
-                messages.warning(request, 'Akun kamu sedang menunggu konfirmasi admin. Silakan tunggu.')
+                messages.warning(request, 'Akun kamu sedang menunggu konfirmasi admin. Silakan tunggu atau hubungi admin.')
+                return render(request, 'accounts/login.html', {'form': LoginForm()})
+            # Jika akun dinonaktifkan
+            if not pending_user.is_active:
+                messages.error(request, 'Akun kamu telah dinonaktifkan. Hubungi admin untuk bantuan.')
                 return render(request, 'accounts/login.html', {'form': LoginForm()})
         except CustomUser.DoesNotExist:
             pass
-        
+        except CustomUser.MultipleObjectsReturned:
+            pass
+
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            messages.success(request, f'Selamat datang kembali, {user.username}!')
+            messages.success(request, f'Selamat datang, {user.username}!')
             next_url = request.GET.get('next', 'dashboard')
             return redirect(next_url)
         else:
-            messages.error(request, 'Username atau password salah.')
+            messages.error(request, 'Username/email atau password salah. Periksa kembali.')
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
@@ -110,25 +122,37 @@ def student_menu_view(request):
         return redirect('dashboard')
     
     from menu.models import Category
+    from accounts.models import Canteen  # Import di sini agar selalu tersedia
     
     search_query = request.GET.get('search', '')
     category_id = request.GET.get('category', '')
-    canteen_id = request.GET.get('canteen', '')
+
+    # Get active canteen from session
+    selected_canteen_id = request.session.get('selected_canteen_id')
+    active_canteen = None
 
     items = MenuItem.objects.filter(is_available=True)
+    
+    # If student has scanned QR, filter to that canteen only
+    if selected_canteen_id:
+        try:
+            active_canteen = Canteen.objects.get(id=selected_canteen_id, is_active=True)
+            items = items.filter(canteen=active_canteen)
+        except Exception:
+            # Session canteen no longer valid, clear it
+            request.session.pop('selected_canteen_id', None)
+            request.session.pop('selected_canteen_name', None)
+
     if search_query:
         items = items.filter(name__icontains=search_query)
     if category_id:
         items = items.filter(category_id=category_id)
-    if canteen_id:
-        items = items.filter(canteen_id=canteen_id)
 
     categories = Category.objects.all()
     canteens = Canteen.objects.filter(is_active=True)
 
     # Convert to int if not empty for template comparison
     selected_cat = int(category_id) if category_id and category_id.isdigit() else ''
-    selected_canteen = int(canteen_id) if canteen_id and canteen_id.isdigit() else ''
 
     context = {
         'items': items,
@@ -136,7 +160,8 @@ def student_menu_view(request):
         'canteens': canteens,
         'search': search_query,
         'selected_cat': selected_cat,
-        'selected_canteen': selected_canteen,
+        'active_canteen': active_canteen,
+        'has_canteen_session': bool(selected_canteen_id),
     }
     return render(request, 'dashboard/menu_makanan.html', context)
 
@@ -145,10 +170,14 @@ def student_menu_view(request):
 def student_menu_detail_view(request, item_id):
     if request.user.role != 'student':
         messages.error(request, 'Akses ditolak. Anda bukan student.')
-        return redirect('dashboard_redirect')
-        
-    item = get_object_or_404(MenuItem, id=item_id)
-    # We will pass dummy data for addons as per implementation plan
+        return redirect('dashboard')
+    
+    try:
+        item = MenuItem.objects.get(id=item_id, is_available=True)
+    except MenuItem.DoesNotExist:
+        messages.error(request, 'Menu tidak ditemukan atau tidak tersedia.')
+        return redirect('student_menu')
+
     context = {
         'item': item,
     }
@@ -198,6 +227,156 @@ def admin_dashboard(request):
 
 
 @login_required
+def admin_dashboard_api(request):
+    if not request.user.is_sysadmin():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    today = timezone.now().date()
+    
+    # 7 days users
+    user_data = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        user_data.append(CustomUser.objects.filter(date_joined__date=d).count())
+        
+    # 10 days orders (template uses 10 bars A-J)
+    order_data = []
+    for i in range(9, -1, -1):
+        d = today - timedelta(days=i)
+        order_data.append(Order.objects.filter(created_at__date=d).count())
+        
+    # Hourly orders today (for target chart: 6, 8, 12, 15, 18, 20)
+    hourly_orders = []
+    for h in [6, 8, 12, 15, 18, 20]:
+        hourly_orders.append(Order.objects.filter(created_at__date=today, created_at__hour=h).count())
+        
+    # Global volume 7 days (revenue)
+    revenue_data = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        rev = Order.objects.filter(created_at__date=d, status='done').aggregate(t=Sum('total_price'))['t'] or 0
+        revenue_data.append(float(rev))
+
+    # Canteens top
+    canteen_orders = []
+    canteens = Canteen.objects.annotate(todays_orders=Count('orders', filter=Q(orders__created_at__date=today))).order_by('-todays_orders')[:9]
+    for c in canteens:
+        canteen_orders.append(c.todays_orders)
+    while len(canteen_orders) < 9:
+        canteen_orders.append(0)
+
+    return JsonResponse({
+        'total_users': CustomUser.objects.count(),
+        'total_orders': Order.objects.count(),
+        'total_canteens': Canteen.objects.count(),
+        'chart_users': user_data,
+        'chart_orders': order_data,
+        'chart_canteens': canteen_orders,
+        'chart_hourly': hourly_orders,
+        'chart_revenue': revenue_data,
+    })
+
+
+@login_required
+def admin_users_api(request):
+    """Realtime stats untuk halaman Users"""
+    if not request.user.is_sysadmin():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.utils import timezone
+    from datetime import timedelta
+    today = timezone.now().date()
+    total_active = CustomUser.objects.filter(is_active=True).count()
+    total_siswa  = CustomUser.objects.filter(role='student').count()
+    total_penjual = CustomUser.objects.filter(role='vendor').count()
+    total_admin  = CustomUser.objects.filter(role='sysadmin').count()
+    # 7-day trend data per role
+    siswa_trend   = [CustomUser.objects.filter(role='student',  date_joined__date=(today - timedelta(days=i))).count() for i in range(6, -1, -1)]
+    penjual_trend = [CustomUser.objects.filter(role='vendor',   date_joined__date=(today - timedelta(days=i))).count() for i in range(6, -1, -1)]
+    admin_trend   = [CustomUser.objects.filter(role='sysadmin', date_joined__date=(today - timedelta(days=i))).count() for i in range(6, -1, -1)]
+    active_trend  = [CustomUser.objects.filter(is_active=True,  date_joined__date=(today - timedelta(days=i))).count() for i in range(6, -1, -1)]
+    return JsonResponse({
+        'total_active': total_active,
+        'total_siswa': total_siswa,
+        'total_penjual': total_penjual,
+        'total_admin': total_admin,
+        'trend_active': active_trend,
+        'trend_siswa': siswa_trend,
+        'trend_penjual': penjual_trend,
+        'trend_admin': admin_trend,
+    })
+
+
+@login_required
+def admin_monitoring_api(request):
+    """Realtime data untuk halaman Monitoring"""
+    if not request.user.is_sysadmin():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Avg, F, ExpressionWrapper, DurationField
+    today = timezone.now().date()
+    # 4 summary cards
+    total_users  = CustomUser.objects.count()
+    orders_today = Order.objects.filter(created_at__date=today)
+    active_queue = Order.objects.filter(status__in=['pending', 'processing']).count()
+    # avg wait = avg minutes between created_at and updated_at for done orders today
+    done_orders = orders_today.filter(status='done')
+    total_orders_today = orders_today.count()
+    # 7-day order trend
+    order_trend = []
+    day_labels  = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        order_trend.append(Order.objects.filter(created_at__date=d).count())
+        day_labels.append(d.strftime('%d %b'))
+    # Hourly today (00-23)
+    hourly = [orders_today.filter(created_at__hour=h).count() for h in range(0, 24)]
+    # Status breakdown today
+    status_data = {
+        'pending':    orders_today.filter(status='pending').count(),
+        'processing': orders_today.filter(status='processing').count(),
+        'done':       orders_today.filter(status='done').count(),
+        'cancelled':  orders_today.filter(status='cancelled').count(),
+    }
+    # Top 5 menu items today
+    from orders.models import OrderItem
+    from menu.models import MenuItem
+    from django.db.models import Sum as DSum
+    top_menus = (
+        OrderItem.objects
+        .filter(order__created_at__date=today)
+        .values('menu_item__name')
+        .annotate(total_qty=DSum('quantity'))
+        .order_by('-total_qty')[:5]
+    )
+    top_menu_list = [{'name': m['menu_item__name'], 'count': m['total_qty']} for m in top_menus]
+    # Canteen active queue
+    from accounts.models import Canteen
+    canteens_queue = []
+    for c in Canteen.objects.filter(is_active=True):
+        q = Order.objects.filter(canteen=c, status__in=['pending','processing']).count()
+        canteens_queue.append({'name': c.name, 'count': q})
+    canteens_queue.sort(key=lambda x: x['count'], reverse=True)
+    # Mini chart trends (7 days per category)
+    user_trend = [CustomUser.objects.filter(date_joined__date=(today - timedelta(days=i))).count() for i in range(6, -1, -1)]
+    return JsonResponse({
+        'total_users': total_users,
+        'orders_today': total_orders_today,
+        'active_queue': active_queue,
+        'day_labels': day_labels,
+        'order_trend': order_trend,
+        'hourly': hourly,
+        'status': status_data,
+        'top_menus': top_menu_list,
+        'canteens_queue': canteens_queue,
+        'user_trend': user_trend,
+    })
+
+
+@login_required
 def admin_users(request):
     if not request.user.is_sysadmin():
         return redirect('dashboard')
@@ -210,16 +389,27 @@ def admin_users(request):
         
         if username and email and password:
             if CustomUser.objects.filter(username=username).exists():
-                messages.error(request, 'Username sudah digunakan.')
+                messages.error(request, f'Username "{username}" sudah digunakan.')
             elif CustomUser.objects.filter(email=email).exists():
-                messages.error(request, 'Email sudah digunakan.')
+                messages.error(request, f'Email "{email}" sudah digunakan.')
             else:
                 # Admin menambahkan user: langsung aktif & sudah disetujui
                 user = CustomUser.objects.create_user(
                     username=username, email=email, password=password, role=role,
                     is_active=True, is_approved=True
                 )
-                messages.success(request, f'Pengguna {username} berhasil ditambahkan dan langsung aktif.')
+                # Jika vendor, buat kantin placeholder otomatis
+                if role == 'vendor':
+                    Canteen.objects.create(
+                        vendor=user,
+                        name=f'Kantin {username}',
+                        location='Lokasi belum diisi',
+                        description='Kantin baru - silakan edit di halaman kantin.',
+                        is_active=True,
+                    )
+                    messages.success(request, f'Vendor "{username}" berhasil ditambahkan beserta kantin placeholder-nya. Login: {username} / {password}')
+                else:
+                    messages.success(request, f'Pengguna "{username}" berhasil ditambahkan. Login: {username} / {password}')
         else:
             messages.error(request, 'Semua field (Username, Email, Password) harus diisi.')
         return redirect('admin_users')
@@ -261,6 +451,16 @@ def admin_toggle_user(request, user_id):
     user.save()
     status = 'diaktifkan & dikonfirmasi' if user.is_active else 'dinonaktifkan'
     messages.success(request, f'User {user.username} berhasil {status}.')
+    # Jika vendor baru diaktifkan tapi belum punya kantin, buat kantin placeholder
+    if user.is_active and user.role == 'vendor' and not hasattr(user, 'canteen'):
+        Canteen.objects.create(
+            vendor=user,
+            name=f'Kantin {user.username}',
+            location='Lokasi belum diisi',
+            description='Kantin baru - silakan edit.',
+            is_active=True,
+        )
+        messages.info(request, f'Kantin placeholder untuk {user.username} juga telah dibuat.')
     return redirect('admin_users')
 
 
@@ -342,14 +542,14 @@ def admin_canteens(request):
     status_filter = request.GET.get('status', '')
 
     canteens = Canteen.objects.select_related('vendor').annotate(
-        menu_count=models.Count('menu_items', distinct=True),
-        order_count=models.Count('orders', distinct=True)
+        menu_count=Count('menu_items', distinct=True),
+        order_count=Count('orders', distinct=True)
     ).order_by('-created_at')
 
     if search:
         canteens = canteens.filter(
-            models.Q(name__icontains=search) |
-            models.Q(vendor__username__icontains=search)
+            Q(name__icontains=search) |
+            Q(vendor__username__icontains=search)
         )
 
     if status_filter == 'aktif':

@@ -1,88 +1,318 @@
-{% extends 'base.html' %}
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
 
 {% block title %}Smart Food Queue - Menu {{ canteen.name }}{% endblock %}
-{% block page_title %}Menu: <span>{{ canteen.name }}</span>{% endblock %}
+{% block nav_menu_makanan %}active{% endblock %}
 
 {% block content %}
+<style>
+    /* Dashboard Wrapper */
+    .wrapper-outer {
+        font-family: 'Inter', sans-serif;
+        padding-bottom: 2rem;
+    }
 
-<!-- CATEGORIES FILTER -->
-<div class="d-flex gap-2 mb-4 overflow-auto pb-2" style="scrollbar-width: none;">
-    <a href="{% url 'menu_list' canteen.id %}" class="btn {% if not selected_cat %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
-        Semua Menu
-    </a>
-    {% for cat in categories %}
-    <a href="?category={{ cat.id }}" class="btn {% if selected_cat == cat.id|stringformat:'s' %}btn-primary-custom{% else %}btn-outline-primary-custom{% endif %} rounded-pill text-nowrap">
-        {{ cat.icon }} {{ cat.name }}
-    </a>
-    {% endfor %}
-</div>
+    /* Pembungkus Utama */
+    .main-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        overflow: hidden;
+        width: 100%;
+        position: relative;
+    }
 
-<!-- MENU GRID -->
-<div class="row g-4">
-    {% for item in items %}
-    <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="card menu-card h-100 position-relative">
-            <a href="{% url 'menu_detail' item.id %}" class="text-decoration-none">
-                {% if item.image %}
-                <img src="{{ item.image.url }}" class="menu-card-img" alt="{{ item.name }}">
-                {% else %}
-                <div class="menu-card-placeholder">🍽️</div>
-                {% endif %}
-                
-                <div class="menu-card-body pb-0">
-                    <div class="menu-card-category">{{ item.category.name|default:"Umum" }}</div>
-                    <div class="menu-card-name text-white">{{ item.name }}</div>
-                </div>
-            </a>
-            
-            <div class="menu-card-footer mt-auto bg-transparent">
-                <div class="menu-card-price">Rp {{ item.price }}</div>
-                <button onclick="addToCart({{ item.id }})" class="btn-add-cart">
-                    <i class="bi bi-plus-lg"></i> Tambah
-                </button>
+    /* Premium Header */
+    .header-premium {
+        background: linear-gradient(135deg, #ff5000 0%, #ff8c00 100%);
+        padding: 2.5rem 3rem; 
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        min-height: 150px;
+    }
+    .header-premium::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.15) 0%, transparent 50%);
+    }
+    .header-premium::after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 45%;
+        width: 60px;
+        height: 60px;
+        background-image: radial-gradient(white 2px, transparent 2px);
+        background-size: 10px 10px;
+        opacity: 0.15;
+    }
+    
+    .header-text-box {
+        position: relative;
+        z-index: 2;
+    }
+    .header-text-box h1 {
+        font-weight: 800;
+        font-size: 2.2rem;
+        margin: 0 0 5px 0;
+    }
+    .header-text-box p {
+        font-size: 1rem;
+        opacity: 0.95;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .header-illustration {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        height: 140px;
+        object-fit: contain;
+        z-index: 2;
+        margin-right: 20px;
+    }
+
+    /* Content Area */
+    .content-inner {
+        padding: 2rem 3rem 3rem 3rem;
+        background: #f8fafc;
+    }
+
+    /* Category Filter */
+    .category-filter {
+        display: flex;
+        gap: 0.8rem;
+        margin-bottom: 2rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        scrollbar-width: none;
+    }
+    .category-filter::-webkit-scrollbar { display: none; }
+    
+    .btn-cat {
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        padding: 0.6rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-cat.active {
+        background: #ff5e00;
+        color: white;
+        border-color: #ff5e00;
+        box-shadow: 0 4px 10px rgba(255, 94, 0, 0.2);
+    }
+    .btn-cat:hover:not(.active) {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    /* Menu Grid */
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .menu-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        text-decoration: none;
+    }
+    .menu-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+        border-color: #e2e8f0;
+    }
+
+    .menu-img-wrapper {
+        width: 100%;
+        height: 160px;
+        background: #f1f5f9;
+        position: relative;
+    }
+    .menu-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .menu-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: #cbd5e1;
+    }
+
+    .menu-info {
+        padding: 1.2rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .menu-cat-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #ea580c;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.4rem;
+    }
+    .menu-name {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+    }
+    
+    .menu-footer {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+    .menu-price {
+        font-weight: 900;
+        color: #ff5e00;
+        font-size: 1.1rem;
+    }
+    .btn-add {
+        background: #fff7ed;
+        color: #ff5e00;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .btn-add:hover {
+        background: #ff5e00;
+        color: white;
+    }
+
+</style>
+
+<div class="container-fluid wrapper-outer">
+    <div class="main-card">
+        
+        <!-- Premium Header -->
+        <div class="header-premium">
+            <div class="header-text-box">
+                <h1>Menu {{ canteen.name }}</h1>
+                <p>Pilih makanan favoritmu untuk hari ini</p>
             </div>
+            <img src="{% static 'img/keranang.png' %}" alt="Illustration" class="header-illustration">
         </div>
-    </div>
-    {% empty %}
-    <div class="col-12">
-        <div class="card card-body text-center p-5 text-muted">
-            <i class="bi bi-emoji-frown fs-1 mb-3"></i>
-            <h5>Belum ada menu yang tersedia.</h5>
-        </div>
-    </div>
-    {% endfor %}
-</div>
 
-<!-- FLOATING CART BUTTON (Mobile only) -->
-<a href="{% url 'cart' %}" class="btn btn-primary-custom rounded-circle position-fixed bottom-0 end-0 m-4 d-md-none shadow-lg" style="width: 60px; height: 60px; z-index: 1000; font-size: 24px;">
-    <i class="bi bi-cart3"></i>
-</a>
+        <div class="content-inner">
+            
+            <!-- Category Filter -->
+            <div class="category-filter">
+                <a href="{% url 'menu_list' canteen.id %}" class="btn-cat {% if not selected_cat %}active{% endif %}">
+                    Semua Menu
+                </a>
+                {% for cat in categories %}
+                <a href="?category={{ cat.id }}" class="btn-cat {% if selected_cat == cat.id|stringformat:'s' %}active{% endif %}">
+                    {{ cat.icon }} {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Menu Grid -->
+            <div class="menu-grid">
+                {% for item in items %}
+                <div class="menu-card">
+                    <a href="{% url 'menu_detail' item.id %}" style="text-decoration: none; display: block; flex-grow: 1;">
+                        <div class="menu-img-wrapper">
+                            {% if item.image %}
+                            <img src="{{ item.image.url }}" class="menu-img" alt="{{ item.name }}">
+                            {% else %}
+                            <div class="menu-placeholder">🍽️</div>
+                            {% endif %}
+                        </div>
+                        <div class="menu-info">
+                            <div class="menu-cat-label">{{ item.category.name|default:"Umum" }}</div>
+                            <h3 class="menu-name">{{ item.name }}</h3>
+                            
+                            <div class="menu-footer">
+                                <div class="menu-price">Rp {{ item.price }}</div>
+                                <button onclick="addToCart(event, {{ item.id }})" class="btn-add">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
+                    <i class="bi bi-emoji-frown" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;"></i>
+                    <h4 style="font-weight: 800; color: #0f172a;">Belum ada menu</h4>
+                    <p style="color: #64748b;">Kantin ini belum menambahkan menu makanan.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function addToCart(itemId) {
+    function addToCart(event, itemId) {
+        event.preventDefault(); // Mencegah pindah ke menu_detail saat klik tombol plus
         fetch(`/cart/add/${itemId}/`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'ok') {
-                // Flash success via toast (simplified)
                 const toastHTML = `
                 <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
-                    <div class="toast align-items-center text-white bg-success border-0 show" role="alert">
-                        <div class="d-flex">
-                            <div class="toast-body"><i class="bi bi-check-circle me-2"></i> Berhasil ditambahkan!</div>
+                    <div class="toast align-items-center text-white bg-success border-0 show" role="alert" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                        <div class="d-flex p-2">
+                            <div class="toast-body fw-bold" style="font-size: 1rem;"><i class="bi bi-check-circle-fill me-2"></i> Berhasil ditambahkan!</div>
                         </div>
                     </div>
                 </div>`;
                 document.body.insertAdjacentHTML('beforeend', toastHTML);
-                setTimeout(() => document.querySelector('.toast').remove(), 2000);
+                setTimeout(() => {
+                    const toast = document.querySelector('.toast');
+                    if (toast) toast.remove();
+                }, 2000);
                 
-                // Update Badge
-                updateCartBadge();
+                if (typeof updateCartBadge === 'function') {
+                    updateCartBadge();
+                }
             }
         });
     }

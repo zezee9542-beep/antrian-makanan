@@ -71,17 +71,17 @@
     <div class="dashboard-grid">
         <div class="stat-card card-user">
             <div class="stat-header"><div class="stat-title">TOTAL USER</div><i class="bi bi-people stat-icon"></i></div>
-            <div class="stat-value">{{ total_users|default:"1,250" }}</div>
+            <div class="stat-value" id="stat-users">{{ total_users }}</div>
             <div class="chart-container-wave"><canvas id="userChart"></canvas></div>
         </div>
         <div class="stat-card card-order">
             <div class="stat-header"><div class="stat-title">TOTAL TRANSAKSI</div><i class="bi bi-list-task stat-icon"></i></div>
-            <div class="stat-value">{{ total_orders|default:"450" }}</div>
+            <div class="stat-value" id="stat-orders">{{ total_orders }}</div>
             <div class="chart-container-bar"><canvas id="orderMiniChart"></canvas></div>
         </div>
         <div class="stat-card card-canteen">
             <div class="stat-header"><div class="stat-title">KANTIN AKTIF</div><i class="bi bi-shop stat-icon"></i></div>
-            <div class="stat-value">{{ total_canteens|default:"8" }}</div>
+            <div class="stat-value" id="stat-canteens">{{ total_canteens }}</div>
             <div class="chart-container-bar"><canvas id="canteenChart"></canvas></div>
         </div>
     </div>
@@ -120,9 +120,9 @@
                         <th style="width: 20%;">Status</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr><td>Waktu 14:05:01</td><td>CPU: 25%</td><td>Memory: 60%</td><td><span class="status-ok">OK <i class="bi bi-check-circle-fill"></i></span></td></tr>
-                    <tr><td>Waktu 14:04:01</td><td>CPU: 28%</td><td>Memory: 62%</td><td><span class="status-ok">OK <i class="bi bi-check-circle-fill"></i></span></td></tr>
+                <tbody id="systemStatusBody">
+                    <!-- Data realtime akan masuk ke sini jika ada -->
+                    <tr><td colspan="4" class="text-center text-muted py-3">Sistem berjalan normal. Belum ada log aktivitas.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -138,24 +138,24 @@
 
     // 1. User Wave Chart
     const userCtx = document.getElementById('userChart').getContext('2d');
-    new Chart(userCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'User Baru', data: [10, 20, 15, 30, 25, 40, 50], borderColor: '#7ED7C1', backgroundColor: createGradient(userCtx, 'rgba(126,215,193,0.5)', 'rgba(126,215,193,0)'), borderWidth: 3, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: -10 } }, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
+    const userChart = new Chart(userCtx, { type: 'line', data: { labels: ['1','2','3','4','5','6','7'], datasets: [{ label: 'User Baru', data: [0, 0, 0, 0, 0, 0, 0], borderColor: '#7ED7C1', backgroundColor: createGradient(userCtx, 'rgba(126,215,193,0.5)', 'rgba(126,215,193,0)'), borderWidth: 3, fill: true, tension: 0.5, pointRadius: 0, pointHoverRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: -10 } }, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
 
     // 2. Order Mini Bar
     const orderMiniCtx = document.getElementById('orderMiniChart').getContext('2d');
-    new Chart(orderMiniCtx, { type: 'bar', data: { labels: ['A','B','C','D','E','F','G','H','I','J'], datasets: [{ label: 'Transaksi', data: [20, 35, 25, 50, 40, 30, 60, 70, 55, 80], backgroundColor: '#93C5FD', hoverBackgroundColor: '#60A5FA', borderRadius: 4, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
+    const orderMiniChart = new Chart(orderMiniCtx, { type: 'bar', data: { labels: ['A','B','C','D','E','F','G','H','I','J'], datasets: [{ label: 'Transaksi', data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], backgroundColor: '#93C5FD', hoverBackgroundColor: '#60A5FA', borderRadius: 4, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
 
     // 3. Kantin Bar
     const canteenCtx = document.getElementById('canteenChart').getContext('2d');
-    new Chart(canteenCtx, { type: 'bar', data: { labels: ['A','B','C','D','E','F','G','H','I'], datasets: [{ label: 'Kantin Aktif', data: [3, 4, 2, 5, 4, 6, 7, 5, 8], backgroundColor: '#86EFAC', hoverBackgroundColor: '#4ADE80', borderRadius: 4, barPercentage: 0.6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
+    const canteenChart = new Chart(canteenCtx, { type: 'bar', data: { labels: ['A','B','C','D','E','F','G','H','I'], datasets: [{ label: 'Kantin Aktif', data: [0, 0, 0, 0, 0, 0, 0, 0, 0], backgroundColor: '#86EFAC', hoverBackgroundColor: '#4ADE80', borderRadius: 4, barPercentage: 0.6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: false }, y: { display: false, min: 0 } }, interaction: { mode: 'index', intersect: false } } });
 
     // 4. Target Bar Chart
     const targetCtx = document.getElementById('targetChart').getContext('2d');
     const targetGrad = targetCtx.createLinearGradient(0, 0, 0, 150); targetGrad.addColorStop(0, '#6eb5a8'); targetGrad.addColorStop(1, '#a2d2c9');
-    new Chart(targetCtx, { type: 'bar', data: { labels: ['06','08','12','15','18','20'], datasets: [{ label: 'Volume', data: [310, 420, 480, 360, 520, 310], backgroundColor: targetGrad, hoverBackgroundColor: '#111827', borderRadius: { topLeft: 6, topRight: 6 }, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: true, grid: { display: false }, ticks: { color: '#64748b', font: { weight: '600', size: 11 } } }, y: { display: true, min: 0, max: 550, grid: { borderDash: [4,4], color: '#e2e8f0' }, ticks: { stepSize: 150, color: '#64748b', font: { weight: '600', size: 11 } } } }, interaction: { mode: 'index', intersect: false } } });
+    const targetChart = new Chart(targetCtx, { type: 'bar', data: { labels: ['06','08','12','15','18','20'], datasets: [{ label: 'Volume', data: [0, 0, 0, 0, 0, 0], backgroundColor: targetGrad, hoverBackgroundColor: '#111827', borderRadius: { topLeft: 6, topRight: 6 }, barPercentage: 0.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { display: true, grid: { display: false }, ticks: { color: '#64748b', font: { weight: '600', size: 11 } } }, y: { display: true, min: 0, grid: { borderDash: [4,4], color: '#e2e8f0' }, ticks: { stepSize: 150, color: '#64748b', font: { weight: '600', size: 11 } } } }, interaction: { mode: 'index', intersect: false } } });
 
     // 5. API Global Line Chart
     const apiCtx = document.getElementById('apiChart').getContext('2d');
-    new Chart(apiCtx, { type: 'line', data: { labels: ['Sen','Sel','Rab','Kam','Jum','Sab','Min'], datasets: [{ label: 'Volume Global', data: [1500, 2300, 1800, 3200, 2800, 4500, 3900], borderColor: '#4a8b7f', backgroundColor: createGradient(apiCtx, 'rgba(110,181,168,0.3)', 'rgba(110,181,168,0)'), borderWidth: 3, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#ffffff', pointBorderColor: '#4a8b7f', pointBorderWidth: 2, pointHoverRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { grid: { display: false }, ticks: { font: { weight: '600' }, color: '#64748b' } }, y: { min: 0, grid: { borderDash: [6,6], color: '#cbd5e1' }, ticks: { font: { weight: '600' }, color: '#64748b' } } }, interaction: { mode: 'index', intersect: false } } });
+    const apiChart = new Chart(apiCtx, { type: 'line', data: { labels: ['Sen','Sel','Rab','Kam','Jum','Sab','Min'], datasets: [{ label: 'Volume Global', data: [0, 0, 0, 0, 0, 0, 0], borderColor: '#4a8b7f', backgroundColor: createGradient(apiCtx, 'rgba(110,181,168,0.3)', 'rgba(110,181,168,0)'), borderWidth: 3, fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: '#ffffff', pointBorderColor: '#4a8b7f', pointBorderWidth: 2, pointHoverRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: cardTooltip }, scales: { x: { grid: { display: false }, ticks: { font: { weight: '600' }, color: '#64748b' } }, y: { min: 0, grid: { borderDash: [6,6], color: '#cbd5e1' }, ticks: { font: { weight: '600' }, color: '#64748b' } } }, interaction: { mode: 'index', intersect: false } } });
 
     // Fetch AI Anomaly Data
     fetch('/api/ai/anomaly/')
@@ -172,7 +172,41 @@
             }
         })
         .catch(() => {
-            document.getElementById('anomalyContainer').innerHTML = '<ul class="anomaly-list"><li><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;"></i> User X (ID: 1023) - 50 order dalam hitungan menit</li><li><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;"></i> Transaksi tidak normal (&gt; Rp 1 Juta)</li></ul>';
+            document.getElementById('anomalyContainer').innerHTML = '<ul class="anomaly-list"><li><i class="bi bi-info-circle-fill text-muted"></i> Tidak dapat terhubung ke service AI.</li></ul>';
         });
+
+    // Real-time update dashboard stats every 5 seconds
+    setInterval(() => {
+        fetch('/admin-panel/api/dashboard/')
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) return;
+                document.getElementById('stat-users').innerText = data.total_users;
+                document.getElementById('stat-orders').innerText = data.total_orders;
+                document.getElementById('stat-canteens').innerText = data.total_canteens;
+                
+                if (data.chart_users) {
+                    userChart.data.datasets[0].data = data.chart_users;
+                    userChart.update();
+                }
+                if (data.chart_orders) {
+                    orderMiniChart.data.datasets[0].data = data.chart_orders;
+                    orderMiniChart.update();
+                }
+                if (data.chart_canteens) {
+                    canteenChart.data.datasets[0].data = data.chart_canteens;
+                    canteenChart.update();
+                }
+                if (data.chart_hourly) {
+                    targetChart.data.datasets[0].data = data.chart_hourly;
+                    targetChart.update();
+                }
+                if (data.chart_revenue) {
+                    apiChart.data.datasets[0].data = data.chart_revenue;
+                    apiChart.update();
+                }
+            })
+            .catch(err => console.error(err));
+    }, 5000);
 </script>
 {% endblock %}

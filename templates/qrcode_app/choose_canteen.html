@@ -1,0 +1,155 @@
+{% extends 'student_panel/base_student.html' %}
+{% load static %}
+
+{% block title %}Pilih Kantin - Smart Food Queue{% endblock %}
+{% block nav_scan %}active{% endblock %}
+
+{% block content %}
+<style>
+    .choose-header-card {
+        background: white; border-radius: 10px; padding: 1rem 1.8rem;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;
+        margin-bottom: 0; position: relative; overflow: visible;
+    }
+    .back-icon-btn {
+        width: 38px; height: 38px; background: #f8fafc; border: 1px solid #e2e8f0;
+        border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        color: #64748b; text-decoration: none; font-size: 1.1rem;
+        transition: all 0.2s; flex-shrink: 0; margin-right: 1rem;
+    }
+    .back-icon-btn:hover { background: #fff7ed; color: #ff5e00; border-color: #ffedd5; transform: translateX(-3px); }
+
+    .choose-content { padding: 1.5rem 0 2rem; }
+
+    /* Info banner */
+    .info-banner {
+        background: linear-gradient(135deg, #fffbeb, #fff7ed);
+        border: 1px solid #fde68a; border-radius: 14px;
+        padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+        display: flex; align-items: center; gap: 1rem;
+    }
+    .info-banner i { font-size: 1.6rem; color: #f59e0b; flex-shrink: 0; }
+    .info-banner div h6 { font-weight: 800; color: #92400e; margin: 0 0 0.2rem; }
+    .info-banner div p { font-size: 0.85rem; color: #b45309; margin: 0; }
+
+    /* Canteen grid */
+    .canteen-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.2rem;
+    }
+    .canteen-card {
+        background: white; border-radius: 16px; border: 2px solid #f1f5f9;
+        padding: 1.8rem; text-decoration: none;
+        transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem;
+    }
+    .canteen-card:hover {
+        border-color: #ff5e00; box-shadow: 0 12px 35px rgba(255,94,0,0.15);
+        transform: translateY(-4px);
+    }
+    .canteen-icon {
+        width: 70px; height: 70px; border-radius: 20px;
+        background: linear-gradient(135deg, #fff7ed, #ffedd5);
+        border: 2px solid #ffedd5;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; transition: all 0.25s;
+    }
+    .canteen-card:hover .canteen-icon {
+        background: linear-gradient(135deg, #ff5e00, #ff8c00);
+        border-color: #ff5e00;
+    }
+    .canteen-card:hover .canteen-icon i { color: white; }
+    .canteen-icon i { color: #ff5e00; font-size: 1.8rem; }
+    .canteen-name { font-weight: 800; font-size: 1.05rem; color: #0f172a; }
+    .canteen-location { font-size: 0.82rem; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
+    .canteen-meta {
+        display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;
+    }
+    .canteen-badge {
+        background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px;
+        padding: 0.25rem 0.75rem; font-size: 0.78rem; font-weight: 600; color: #64748b;
+    }
+    .canteen-badge.green { background: #dcfce7; border-color: #bbf7d0; color: #16a34a; }
+    .select-btn {
+        width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 0.65rem; font-weight: 700; color: #64748b; font-size: 0.88rem;
+        transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .canteen-card:hover .select-btn {
+        background: linear-gradient(135deg, #ff5e00, #ff8c00);
+        color: white; border-color: #ff5e00;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center; padding: 4rem 2rem;
+        background: white; border-radius: 16px; border: 1px solid #f1f5f9;
+    }
+    .empty-state i { font-size: 3.5rem; color: #cbd5e1; margin-bottom: 1rem; display: block; }
+    .empty-state h5 { font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; }
+    .empty-state p { color: #64748b; font-size: 0.9rem; }
+</style>
+
+<!-- Header Card -->
+<div class="choose-header-card">
+    <a href="{% url 'scan_qr' %}" class="back-icon-btn" title="Kembali ke Scan QR">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div style="display:flex;align-items:center;gap:1.2rem;flex:1;">
+        <div style="width:45px;height:45px;background:#fff7ed;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#ff5e00;border:1px solid #ffedd5;flex-shrink:0;">
+            <i class="bi bi-shop"></i>
+        </div>
+        <div>
+            <h1 style="font-weight:800;font-size:1.1rem;color:#0f172a;margin:0 0 2px 0;">Pilih Kantin</h1>
+            <p style="color:#64748b;font-size:0.8rem;font-weight:500;margin:0;">Pilih kantin yang ingin kamu pesan</p>
+        </div>
+    </div>
+    <img src="{% static 'img/qrr.png' %}" alt="" style="height:100px;object-fit:contain;margin-left:1rem;margin-top:-10px;margin-bottom:-5px;filter:drop-shadow(0 8px 15px rgba(255,94,0,0.15));">
+</div>
+
+<!-- Content -->
+<div class="choose-content">
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+        <i class="bi bi-info-circle-fill"></i>
+        <div>
+            <h6>Tidak bisa baca QR? Pilih kantin secara manual</h6>
+            <p>Untuk pengujian, kamu bisa langsung memilih kantin tanpa scan QR. Pastikan kamu benar-benar berada di kantin tersebut.</p>
+        </div>
+    </div>
+
+    {% if canteens %}
+    <div class="canteen-grid">
+        {% for canteen in canteens %}
+        <a href="{% url 'process_qr' %}?canteen_id={{ canteen.id }}" class="canteen-card">
+            <div class="canteen-icon"><i class="bi bi-shop-window"></i></div>
+            <div>
+                <div class="canteen-name">{{ canteen.name }}</div>
+                {% if canteen.location %}
+                <div class="canteen-location"><i class="bi bi-geo-alt"></i> {{ canteen.location }}</div>
+                {% endif %}
+            </div>
+            <div class="canteen-meta">
+                <span class="canteen-badge green"><i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Buka</span>
+                {% if canteen.location %}<span class="canteen-badge"><i class="bi bi-geo-alt"></i></span>{% endif %}
+            </div>
+            <div class="select-btn">
+                <i class="bi bi-check-circle"></i> Pilih Kantin Ini
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-shop"></i>
+        <h5>Belum Ada Kantin</h5>
+        <p>Belum ada kantin yang aktif saat ini. Hubungi admin.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
